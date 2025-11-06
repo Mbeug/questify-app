@@ -19,10 +19,10 @@ npm start
 ```
 
 ## 🗺️ Roadmap
- [] Base du projet
- [] Gestion des quêtes
- [] Système d’XP et niveaux
- [] Intégration Google Agenda
+ -[ ] Base du projet
+ -[ ] Gestion des quêtes
+ -[ ] Système d’XP et niveaux
+ -[ ] Intégration Google Agenda
 
 ## 🧾 Licence
 Code sous MIT, design sous CC BY-NC-SA 4.0.
