@@ -16,7 +16,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 // Autorise l'endpoint de test sans authentification
-                .requestMatchers("/api/hello").permitAll()
+                .requestMatchers("/api/hello", "/actuator/health", "/actuator/info").permitAll()
                 // Tout le reste nécessite une auth
                 .anyRequest().authenticated()
             )
