@@ -5,7 +5,7 @@ Gérez vos tâches comme des **quêtes**, gagnez de l’**XP**, suivez votre **p
 
 ## ⚡ Stack
 **Frontend :** React  
-**Backend :** Node.js + Express  
+**Backend :** Springboot Java
 **Base de données :** MongoDB  
 **Design :** Figma  
 **À venir :** intégration Google Agenda & notifications
