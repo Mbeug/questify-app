@@ -4,19 +4,42 @@ services:
     container_name: questify-postgres
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-questify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-questify}
+      POSTGRES_DB: ${POSTGRES_DB:-questify_db}
       TZ: Europe/Brussels
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-questify} -d ${POSTGRES_DB:-questify_db}"]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: questify-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-questify_db}
+      POSTGRES_USER: ${POSTGRES_USER:-questify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-questify}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-a-long-random-string}
+      FIREBASE_ENABLED: ${FIREBASE_ENABLED:-false}
+      FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
+      REMINDERS_ENABLED: ${REMINDERS_ENABLED:-true}
+      REMINDERS_HOURS_BEFORE: ${REMINDERS_HOURS_BEFORE:-24}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   pg_data:
