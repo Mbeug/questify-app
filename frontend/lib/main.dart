@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'app_router.dart';
 import 'theme.dart';
 
@@ -9,7 +10,9 @@ void main() async {
   // Firebase est optionnel : si non configuré (pas de google-services.json),
   // l'app fonctionne quand meme sans notifications push.
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (_) {
     debugPrint('Firebase non configure — notifications push desactivees.');
   }
