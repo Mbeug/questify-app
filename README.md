@@ -149,6 +149,40 @@ FIREBASE_ENABLED=true
 FIREBASE_CREDENTIALS_PATH=./firebase-service-account.json
 ```
 
+### Configuration Firebase (notifications push)
+
+Firebase est **optionnel** — l'app fonctionne sans. Pour activer les notifications push :
+
+#### 1. Creer un projet Firebase
+
+1. Aller sur [Firebase Console](https://console.firebase.google.com)
+2. Creer un projet ou selectionner un existant
+
+#### 2. Configurer Android
+
+1. Dans la console, ajouter une app Android avec le package `com.questify.app`
+2. Telecharger `google-services.json`
+3. Placer le fichier dans `frontend/android/app/google-services.json`
+
+#### 3. Configurer iOS (optionnel, necessite macOS)
+
+1. Ajouter une app iOS avec le bundle ID `com.questify.app`
+2. Telecharger `GoogleService-Info.plist`
+3. Placer le fichier dans `frontend/ios/Runner/GoogleService-Info.plist`
+
+#### 4. Configurer le backend (envoi de push)
+
+1. Dans Firebase Console > Project Settings > Service Accounts
+2. Cliquer "Generate New Private Key" pour telecharger le JSON
+3. Placer le fichier dans `backend/` (ex: `firebase-service-account.json`)
+4. Configurer les variables d'environnement :
+   ```env
+   FIREBASE_ENABLED=true
+   FIREBASE_CREDENTIALS_PATH=./firebase-service-account.json
+   ```
+
+> **Note** : Les fichiers `google-services.json`, `GoogleService-Info.plist` et les cles de service account sont dans le `.gitignore` et ne doivent jamais etre commites.
+
 ## Roadmap
 
 - [x] Base du projet
@@ -160,8 +194,8 @@ FIREBASE_CREDENTIALS_PATH=./firebase-service-account.json
 - [x] UI polish, animations, theme Material 3
 - [x] Integration Google Calendar + notifications push
 - [x] Docker support (PostgreSQL + backend)
+- [x] Configuration Firebase (app ID, Gradle plugin, notifications)
 - [ ] CI/CD pipeline
-- [ ] Configuration Firebase production
 - [ ] Publication stores (App Store / Google Play)
 
 ## Licence

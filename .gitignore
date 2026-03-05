@@ -75,5 +75,10 @@ config/local.json
 firebase.json
 serviceAccountKey.json
 
+# --- Firebase config files (contain API keys) ---
+google-services.json
+GoogleService-Info.plist
+firebase_app_id_file.json
+
 # --- Backend Java ---
 /backend/.gitignore

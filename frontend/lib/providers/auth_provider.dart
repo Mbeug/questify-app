@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/auth_response.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
+import 'notification_provider.dart';
 
 // State pour l'auth
 class AuthState {
@@ -43,15 +44,26 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(
     ref.read(apiServiceProvider),
     ref.read(secureStorageProvider),
+    ref,
   );
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final ApiService _api;
   final FlutterSecureStorage _storage;
+  final Ref _ref;
 
-  AuthNotifier(this._api, this._storage) : super(const AuthState()) {
+  AuthNotifier(this._api, this._storage, this._ref) : super(const AuthState()) {
     _tryAutoLogin();
+  }
+
+  /// Initialize push notifications after successful authentication.
+  void _initNotifications() {
+    try {
+      _ref.read(notificationProvider.notifier).initialize();
+    } catch (_) {
+      // Firebase may not be configured — silently ignore
+    }
   }
 
   Future<void> _tryAutoLogin() async {
@@ -69,6 +81,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             isAuthenticated: true,
             isLoading: false,
           );
+          _initNotifications();
           return;
         } catch (_) {
           // Token expire, essayer le refresh
@@ -87,6 +100,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
                 isAuthenticated: true,
                 isLoading: false,
               );
+              _initNotifications();
               return;
             } catch (_) {
               // Refresh echoue
@@ -116,6 +130,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         isLoading: false,
       );
+      _initNotifications();
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(isLoading: false, error: e.message);
@@ -144,6 +159,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         isLoading: false,
       );
+      _initNotifications();
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(isLoading: false, error: e.message);
