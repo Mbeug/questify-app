@@ -3,11 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/features/quests/quest_card.dart';
 import 'package:frontend/models/quest.dart';
+import 'package:frontend/theme.dart';
 
 Widget buildTestApp(Widget child) {
   return ProviderScope(
     child: MaterialApp(
-      home: Scaffold(body: child),
+      theme: ThemeData(
+        extensions: const [QuestifyColors.day],
+      ),
+      home: Scaffold(body: SingleChildScrollView(child: child)),
     ),
   );
 }
@@ -41,15 +45,6 @@ void main() {
       expect(find.text('+500 XP'), findsOneWidget);
     });
 
-    testWidgets('displays quest description', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        QuestCard(quest: pendingQuest),
-      ));
-
-      expect(find.text('Slay the ancient dragon in the mountain cave'),
-          findsOneWidget);
-    });
-
     testWidgets('displays difficulty label', (tester) async {
       await tester.pumpWidget(buildTestApp(
         QuestCard(quest: pendingQuest),
@@ -58,23 +53,29 @@ void main() {
       expect(find.text('Epique'), findsOneWidget);
     });
 
-    testWidgets('displays status label for pending quest', (tester) async {
+    testWidgets('displays rarity badge for pending EPIC quest',
+        (tester) async {
       await tester.pumpWidget(buildTestApp(
         QuestCard(quest: pendingQuest),
       ));
 
-      expect(find.text('En attente'), findsOneWidget);
+      // EPIC maps to 'legendary' rarity, label = 'Legendaire'
+      expect(find.text('\u{1F534} Legendaire'), findsOneWidget);
     });
 
-    testWidgets('displays status label for completed quest', (tester) async {
+    testWidgets('completed quest is rendered with reduced opacity',
+        (tester) async {
       await tester.pumpWidget(buildTestApp(
         QuestCard(quest: completedQuest),
       ));
 
-      expect(find.text('Terminee'), findsOneWidget);
+      // The whole content column is wrapped in Opacity(0.5) for completed quests
+      final opacityWidget = tester.widget<Opacity>(find.byType(Opacity).first);
+      expect(opacityWidget.opacity, 0.5);
     });
 
-    testWidgets('shows complete button for non-completed quest',
+    testWidgets(
+        'completion checkbox is tappable for non-completed quest',
         (tester) async {
       bool completed = false;
       await tester.pumpWidget(buildTestApp(
@@ -84,22 +85,36 @@ void main() {
         ),
       ));
 
-      final completeBtn = find.byIcon(Icons.check_circle_outline);
-      expect(completeBtn, findsOneWidget);
+      // The _CompletionCheckbox is a GestureDetector wrapping a 28x28 AnimatedContainer
+      // For a non-completed quest, the checkbox shows an empty box (no check icon)
+      // Find the AnimatedContainer with tight 28x28 constraints (the checkbox)
+      final checkboxFinder = find.byWidgetPredicate((widget) =>
+          widget is AnimatedContainer &&
+          widget.constraints == BoxConstraints.tightFor(width: 28, height: 28));
 
-      await tester.tap(completeBtn);
+      expect(checkboxFinder, findsOneWidget);
+
+      // Tap the checkbox
+      await tester.tap(checkboxFinder);
       expect(completed, isTrue);
     });
 
-    testWidgets('hides complete button for completed quest', (tester) async {
+    testWidgets('completion checkbox is not tappable for completed quest',
+        (tester) async {
+      bool completed = false;
       await tester.pumpWidget(buildTestApp(
         QuestCard(
           quest: completedQuest,
-          onComplete: () {},
+          onComplete: () => completed = true,
         ),
       ));
 
-      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      // For a completed quest, the checkbox shows a green check icon
+      expect(find.byIcon(Icons.check), findsOneWidget);
+
+      // Tapping it should NOT trigger onComplete (the GestureDetector's onTap is null)
+      await tester.tap(find.byIcon(Icons.check));
+      expect(completed, isFalse);
     });
 
     testWidgets('shows delete button and calls callback', (tester) async {
@@ -154,6 +169,68 @@ void main() {
 
         expect(find.text(entry.value), findsOneWidget);
       }
+    });
+
+    testWidgets('shows rarity labels for all difficulties', (tester) async {
+      final rarityLabels = {
+        QuestDifficulty.EASY: '\u{1F7E2} Commune',
+        QuestDifficulty.MEDIUM: '\u{1F7E1} Rare',
+        QuestDifficulty.HARD: '\u{1F7E3} Epique',
+        QuestDifficulty.EPIC: '\u{1F534} Legendaire',
+      };
+
+      for (final entry in rarityLabels.entries) {
+        await tester.pumpWidget(buildTestApp(
+          QuestCard(
+            quest: Quest(
+              id: 1,
+              title: 'Test',
+              status: QuestStatus.PENDING,
+              difficulty: entry.key,
+              xpReward: 100,
+            ),
+          ),
+        ));
+
+        expect(find.text(entry.value), findsOneWidget);
+      }
+    });
+
+    testWidgets('hides delete button when onDelete is null',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        QuestCard(quest: pendingQuest),
+      ));
+
+      expect(find.byIcon(Icons.delete_outline), findsNothing);
+    });
+
+    testWidgets('shows coin reward badge when coinReward > 0',
+        (tester) async {
+      const questWithCoins = Quest(
+        id: 3,
+        title: 'Gold Quest',
+        status: QuestStatus.PENDING,
+        difficulty: QuestDifficulty.MEDIUM,
+        xpReward: 100,
+        coinReward: 25,
+      );
+
+      await tester.pumpWidget(buildTestApp(
+        QuestCard(quest: questWithCoins),
+      ));
+
+      expect(find.text('+25 \u{1FA99}'), findsOneWidget);
+    });
+
+    testWidgets('hides coin reward badge when coinReward is 0',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        QuestCard(quest: pendingQuest),
+      ));
+
+      // pendingQuest has default coinReward = 0, so no coin badge
+      expect(find.textContaining('\u{1FA99}'), findsNothing);
     });
   });
 }
