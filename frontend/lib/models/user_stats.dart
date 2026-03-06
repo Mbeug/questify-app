@@ -12,6 +12,10 @@ abstract class UserStats with _$UserStats {
     required int xpForCurrentLevel,
     required int totalQuestsCompleted,
     required double progressPercent,
+    @Default(0) int coins,
+    @Default(0) int gems,
+    @Default(0) int currentStreak,
+    @Default(0) int bestStreak,
   }) = _UserStats;
 
   factory UserStats.fromJson(Map<String, dynamic> json) =>

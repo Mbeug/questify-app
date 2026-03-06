@@ -13,6 +13,12 @@ _Quest _$QuestFromJson(Map<String, dynamic> json) => _Quest(
       status: $enumDecode(_$QuestStatusEnumMap, json['status']),
       difficulty: $enumDecode(_$QuestDifficultyEnumMap, json['difficulty']),
       xpReward: (json['xpReward'] as num).toInt(),
+      coinReward: (json['coinReward'] as num?)?.toInt() ?? 0,
+      category: $enumDecodeNullable(_$QuestCategoryEnumMap, json['category']),
+      recurrence:
+          $enumDecodeNullable(_$QuestRecurrenceEnumMap, json['recurrence']) ??
+              QuestRecurrence.ONE_TIME,
+      rarity: json['rarity'] as String?,
       dueDate: json['dueDate'] as String?,
       completedAt: json['completedAt'] as String?,
       createdAt: json['createdAt'] as String?,
@@ -30,6 +36,10 @@ Map<String, dynamic> _$QuestToJson(_Quest instance) => <String, dynamic>{
       'status': _$QuestStatusEnumMap[instance.status]!,
       'difficulty': _$QuestDifficultyEnumMap[instance.difficulty]!,
       'xpReward': instance.xpReward,
+      'coinReward': instance.coinReward,
+      'category': _$QuestCategoryEnumMap[instance.category],
+      'recurrence': _$QuestRecurrenceEnumMap[instance.recurrence]!,
+      'rarity': instance.rarity,
       'dueDate': instance.dueDate,
       'completedAt': instance.completedAt,
       'createdAt': instance.createdAt,
@@ -50,6 +60,19 @@ const _$QuestDifficultyEnumMap = {
   QuestDifficulty.EPIC: 'EPIC',
 };
 
+const _$QuestCategoryEnumMap = {
+  QuestCategory.HOME: 'HOME',
+  QuestCategory.SPORT: 'SPORT',
+  QuestCategory.PERSONAL: 'PERSONAL',
+  QuestCategory.WORK: 'WORK',
+};
+
+const _$QuestRecurrenceEnumMap = {
+  QuestRecurrence.ONE_TIME: 'ONE_TIME',
+  QuestRecurrence.DAILY: 'DAILY',
+  QuestRecurrence.WEEKLY: 'WEEKLY',
+};
+
 _LevelUpResult _$LevelUpResultFromJson(Map<String, dynamic> json) =>
     _LevelUpResult(
       totalXp: (json['totalXp'] as num).toInt(),
@@ -57,6 +80,8 @@ _LevelUpResult _$LevelUpResultFromJson(Map<String, dynamic> json) =>
       leveledUp: json['leveledUp'] as bool,
       xpGained: (json['xpGained'] as num).toInt(),
       xpToNextLevel: (json['xpToNextLevel'] as num).toInt(),
+      coinsEarned: (json['coinsEarned'] as num?)?.toInt() ?? 0,
+      gemsEarned: (json['gemsEarned'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$LevelUpResultToJson(_LevelUpResult instance) =>
@@ -66,4 +91,6 @@ Map<String, dynamic> _$LevelUpResultToJson(_LevelUpResult instance) =>
       'leveledUp': instance.leveledUp,
       'xpGained': instance.xpGained,
       'xpToNextLevel': instance.xpToNextLevel,
+      'coinsEarned': instance.coinsEarned,
+      'gemsEarned': instance.gemsEarned,
     };

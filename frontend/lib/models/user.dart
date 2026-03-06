@@ -11,6 +11,11 @@ abstract class User with _$User {
     required String displayName,
     required int xp,
     required int level,
+    @Default(0) int coins,
+    @Default(0) int gems,
+    String? avatarId,
+    @Default(0) int currentStreak,
+    @Default(0) int bestStreak,
     String? createdAt,
     @Default(true) bool notificationsEnabled,
   }) = _User;

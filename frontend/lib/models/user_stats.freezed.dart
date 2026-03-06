@@ -20,6 +20,10 @@ mixin _$UserStats {
   int get xpForCurrentLevel;
   int get totalQuestsCompleted;
   double get progressPercent;
+  int get coins;
+  int get gems;
+  int get currentStreak;
+  int get bestStreak;
 
   /// Create a copy of UserStats
   /// with the given fields replaced by the non-null parameter values.
@@ -45,17 +49,33 @@ mixin _$UserStats {
             (identical(other.totalQuestsCompleted, totalQuestsCompleted) ||
                 other.totalQuestsCompleted == totalQuestsCompleted) &&
             (identical(other.progressPercent, progressPercent) ||
-                other.progressPercent == progressPercent));
+                other.progressPercent == progressPercent) &&
+            (identical(other.coins, coins) || other.coins == coins) &&
+            (identical(other.gems, gems) || other.gems == gems) &&
+            (identical(other.currentStreak, currentStreak) ||
+                other.currentStreak == currentStreak) &&
+            (identical(other.bestStreak, bestStreak) ||
+                other.bestStreak == bestStreak));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, xp, level, xpToNextLevel,
-      xpForCurrentLevel, totalQuestsCompleted, progressPercent);
+  int get hashCode => Object.hash(
+      runtimeType,
+      xp,
+      level,
+      xpToNextLevel,
+      xpForCurrentLevel,
+      totalQuestsCompleted,
+      progressPercent,
+      coins,
+      gems,
+      currentStreak,
+      bestStreak);
 
   @override
   String toString() {
-    return 'UserStats(xp: $xp, level: $level, xpToNextLevel: $xpToNextLevel, xpForCurrentLevel: $xpForCurrentLevel, totalQuestsCompleted: $totalQuestsCompleted, progressPercent: $progressPercent)';
+    return 'UserStats(xp: $xp, level: $level, xpToNextLevel: $xpToNextLevel, xpForCurrentLevel: $xpForCurrentLevel, totalQuestsCompleted: $totalQuestsCompleted, progressPercent: $progressPercent, coins: $coins, gems: $gems, currentStreak: $currentStreak, bestStreak: $bestStreak)';
   }
 }
 
@@ -70,7 +90,11 @@ abstract mixin class $UserStatsCopyWith<$Res> {
       int xpToNextLevel,
       int xpForCurrentLevel,
       int totalQuestsCompleted,
-      double progressPercent});
+      double progressPercent,
+      int coins,
+      int gems,
+      int currentStreak,
+      int bestStreak});
 }
 
 /// @nodoc
@@ -91,6 +115,10 @@ class _$UserStatsCopyWithImpl<$Res> implements $UserStatsCopyWith<$Res> {
     Object? xpForCurrentLevel = null,
     Object? totalQuestsCompleted = null,
     Object? progressPercent = null,
+    Object? coins = null,
+    Object? gems = null,
+    Object? currentStreak = null,
+    Object? bestStreak = null,
   }) {
     return _then(_self.copyWith(
       xp: null == xp
@@ -117,6 +145,22 @@ class _$UserStatsCopyWithImpl<$Res> implements $UserStatsCopyWith<$Res> {
           ? _self.progressPercent
           : progressPercent // ignore: cast_nullable_to_non_nullable
               as double,
+      coins: null == coins
+          ? _self.coins
+          : coins // ignore: cast_nullable_to_non_nullable
+              as int,
+      gems: null == gems
+          ? _self.gems
+          : gems // ignore: cast_nullable_to_non_nullable
+              as int,
+      currentStreak: null == currentStreak
+          ? _self.currentStreak
+          : currentStreak // ignore: cast_nullable_to_non_nullable
+              as int,
+      bestStreak: null == bestStreak
+          ? _self.bestStreak
+          : bestStreak // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -220,7 +264,11 @@ extension UserStatsPatterns on UserStats {
             int xpToNextLevel,
             int xpForCurrentLevel,
             int totalQuestsCompleted,
-            double progressPercent)?
+            double progressPercent,
+            int coins,
+            int gems,
+            int currentStreak,
+            int bestStreak)?
         $default, {
     required TResult orElse(),
   }) {
@@ -233,7 +281,11 @@ extension UserStatsPatterns on UserStats {
             _that.xpToNextLevel,
             _that.xpForCurrentLevel,
             _that.totalQuestsCompleted,
-            _that.progressPercent);
+            _that.progressPercent,
+            _that.coins,
+            _that.gems,
+            _that.currentStreak,
+            _that.bestStreak);
       case _:
         return orElse();
     }
@@ -260,7 +312,11 @@ extension UserStatsPatterns on UserStats {
             int xpToNextLevel,
             int xpForCurrentLevel,
             int totalQuestsCompleted,
-            double progressPercent)
+            double progressPercent,
+            int coins,
+            int gems,
+            int currentStreak,
+            int bestStreak)
         $default,
   ) {
     final _that = this;
@@ -272,7 +328,11 @@ extension UserStatsPatterns on UserStats {
             _that.xpToNextLevel,
             _that.xpForCurrentLevel,
             _that.totalQuestsCompleted,
-            _that.progressPercent);
+            _that.progressPercent,
+            _that.coins,
+            _that.gems,
+            _that.currentStreak,
+            _that.bestStreak);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -298,7 +358,11 @@ extension UserStatsPatterns on UserStats {
             int xpToNextLevel,
             int xpForCurrentLevel,
             int totalQuestsCompleted,
-            double progressPercent)?
+            double progressPercent,
+            int coins,
+            int gems,
+            int currentStreak,
+            int bestStreak)?
         $default,
   ) {
     final _that = this;
@@ -310,7 +374,11 @@ extension UserStatsPatterns on UserStats {
             _that.xpToNextLevel,
             _that.xpForCurrentLevel,
             _that.totalQuestsCompleted,
-            _that.progressPercent);
+            _that.progressPercent,
+            _that.coins,
+            _that.gems,
+            _that.currentStreak,
+            _that.bestStreak);
       case _:
         return null;
     }
@@ -326,7 +394,11 @@ class _UserStats implements UserStats {
       required this.xpToNextLevel,
       required this.xpForCurrentLevel,
       required this.totalQuestsCompleted,
-      required this.progressPercent});
+      required this.progressPercent,
+      this.coins = 0,
+      this.gems = 0,
+      this.currentStreak = 0,
+      this.bestStreak = 0});
   factory _UserStats.fromJson(Map<String, dynamic> json) =>
       _$UserStatsFromJson(json);
 
@@ -342,6 +414,18 @@ class _UserStats implements UserStats {
   final int totalQuestsCompleted;
   @override
   final double progressPercent;
+  @override
+  @JsonKey()
+  final int coins;
+  @override
+  @JsonKey()
+  final int gems;
+  @override
+  @JsonKey()
+  final int currentStreak;
+  @override
+  @JsonKey()
+  final int bestStreak;
 
   /// Create a copy of UserStats
   /// with the given fields replaced by the non-null parameter values.
@@ -372,17 +456,33 @@ class _UserStats implements UserStats {
             (identical(other.totalQuestsCompleted, totalQuestsCompleted) ||
                 other.totalQuestsCompleted == totalQuestsCompleted) &&
             (identical(other.progressPercent, progressPercent) ||
-                other.progressPercent == progressPercent));
+                other.progressPercent == progressPercent) &&
+            (identical(other.coins, coins) || other.coins == coins) &&
+            (identical(other.gems, gems) || other.gems == gems) &&
+            (identical(other.currentStreak, currentStreak) ||
+                other.currentStreak == currentStreak) &&
+            (identical(other.bestStreak, bestStreak) ||
+                other.bestStreak == bestStreak));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, xp, level, xpToNextLevel,
-      xpForCurrentLevel, totalQuestsCompleted, progressPercent);
+  int get hashCode => Object.hash(
+      runtimeType,
+      xp,
+      level,
+      xpToNextLevel,
+      xpForCurrentLevel,
+      totalQuestsCompleted,
+      progressPercent,
+      coins,
+      gems,
+      currentStreak,
+      bestStreak);
 
   @override
   String toString() {
-    return 'UserStats(xp: $xp, level: $level, xpToNextLevel: $xpToNextLevel, xpForCurrentLevel: $xpForCurrentLevel, totalQuestsCompleted: $totalQuestsCompleted, progressPercent: $progressPercent)';
+    return 'UserStats(xp: $xp, level: $level, xpToNextLevel: $xpToNextLevel, xpForCurrentLevel: $xpForCurrentLevel, totalQuestsCompleted: $totalQuestsCompleted, progressPercent: $progressPercent, coins: $coins, gems: $gems, currentStreak: $currentStreak, bestStreak: $bestStreak)';
   }
 }
 
@@ -400,7 +500,11 @@ abstract mixin class _$UserStatsCopyWith<$Res>
       int xpToNextLevel,
       int xpForCurrentLevel,
       int totalQuestsCompleted,
-      double progressPercent});
+      double progressPercent,
+      int coins,
+      int gems,
+      int currentStreak,
+      int bestStreak});
 }
 
 /// @nodoc
@@ -421,6 +525,10 @@ class __$UserStatsCopyWithImpl<$Res> implements _$UserStatsCopyWith<$Res> {
     Object? xpForCurrentLevel = null,
     Object? totalQuestsCompleted = null,
     Object? progressPercent = null,
+    Object? coins = null,
+    Object? gems = null,
+    Object? currentStreak = null,
+    Object? bestStreak = null,
   }) {
     return _then(_UserStats(
       xp: null == xp
@@ -447,6 +555,22 @@ class __$UserStatsCopyWithImpl<$Res> implements _$UserStatsCopyWith<$Res> {
           ? _self.progressPercent
           : progressPercent // ignore: cast_nullable_to_non_nullable
               as double,
+      coins: null == coins
+          ? _self.coins
+          : coins // ignore: cast_nullable_to_non_nullable
+              as int,
+      gems: null == gems
+          ? _self.gems
+          : gems // ignore: cast_nullable_to_non_nullable
+              as int,
+      currentStreak: null == currentStreak
+          ? _self.currentStreak
+          : currentStreak // ignore: cast_nullable_to_non_nullable
+              as int,
+      bestStreak: null == bestStreak
+          ? _self.bestStreak
+          : bestStreak // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }

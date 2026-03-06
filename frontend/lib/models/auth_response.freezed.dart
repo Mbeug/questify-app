@@ -384,6 +384,9 @@ mixin _$AuthUser {
   String get displayName;
   int get xp;
   int get level;
+  int get coins;
+  int get gems;
+  String? get avatarId;
 
   /// Create a copy of AuthUser
   /// with the given fields replaced by the non-null parameter values.
@@ -405,17 +408,21 @@ mixin _$AuthUser {
             (identical(other.displayName, displayName) ||
                 other.displayName == displayName) &&
             (identical(other.xp, xp) || other.xp == xp) &&
-            (identical(other.level, level) || other.level == level));
+            (identical(other.level, level) || other.level == level) &&
+            (identical(other.coins, coins) || other.coins == coins) &&
+            (identical(other.gems, gems) || other.gems == gems) &&
+            (identical(other.avatarId, avatarId) ||
+                other.avatarId == avatarId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, email, displayName, xp, level);
+  int get hashCode => Object.hash(
+      runtimeType, id, email, displayName, xp, level, coins, gems, avatarId);
 
   @override
   String toString() {
-    return 'AuthUser(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level)';
+    return 'AuthUser(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level, coins: $coins, gems: $gems, avatarId: $avatarId)';
   }
 }
 
@@ -424,7 +431,15 @@ abstract mixin class $AuthUserCopyWith<$Res> {
   factory $AuthUserCopyWith(AuthUser value, $Res Function(AuthUser) _then) =
       _$AuthUserCopyWithImpl;
   @useResult
-  $Res call({int id, String email, String displayName, int xp, int level});
+  $Res call(
+      {int id,
+      String email,
+      String displayName,
+      int xp,
+      int level,
+      int coins,
+      int gems,
+      String? avatarId});
 }
 
 /// @nodoc
@@ -444,6 +459,9 @@ class _$AuthUserCopyWithImpl<$Res> implements $AuthUserCopyWith<$Res> {
     Object? displayName = null,
     Object? xp = null,
     Object? level = null,
+    Object? coins = null,
+    Object? gems = null,
+    Object? avatarId = freezed,
   }) {
     return _then(_self.copyWith(
       id: null == id
@@ -466,6 +484,18 @@ class _$AuthUserCopyWithImpl<$Res> implements $AuthUserCopyWith<$Res> {
           ? _self.level
           : level // ignore: cast_nullable_to_non_nullable
               as int,
+      coins: null == coins
+          ? _self.coins
+          : coins // ignore: cast_nullable_to_non_nullable
+              as int,
+      gems: null == gems
+          ? _self.gems
+          : gems // ignore: cast_nullable_to_non_nullable
+              as int,
+      avatarId: freezed == avatarId
+          ? _self.avatarId
+          : avatarId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -563,16 +593,16 @@ extension AuthUserPatterns on AuthUser {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(
-            int id, String email, String displayName, int xp, int level)?
+    TResult Function(int id, String email, String displayName, int xp,
+            int level, int coins, int gems, String? avatarId)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _AuthUser() when $default != null:
-        return $default(
-            _that.id, _that.email, _that.displayName, _that.xp, _that.level);
+        return $default(_that.id, _that.email, _that.displayName, _that.xp,
+            _that.level, _that.coins, _that.gems, _that.avatarId);
       case _:
         return orElse();
     }
@@ -593,15 +623,15 @@ extension AuthUserPatterns on AuthUser {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(
-            int id, String email, String displayName, int xp, int level)
+    TResult Function(int id, String email, String displayName, int xp,
+            int level, int coins, int gems, String? avatarId)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AuthUser():
-        return $default(
-            _that.id, _that.email, _that.displayName, _that.xp, _that.level);
+        return $default(_that.id, _that.email, _that.displayName, _that.xp,
+            _that.level, _that.coins, _that.gems, _that.avatarId);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -621,15 +651,15 @@ extension AuthUserPatterns on AuthUser {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(
-            int id, String email, String displayName, int xp, int level)?
+    TResult? Function(int id, String email, String displayName, int xp,
+            int level, int coins, int gems, String? avatarId)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AuthUser() when $default != null:
-        return $default(
-            _that.id, _that.email, _that.displayName, _that.xp, _that.level);
+        return $default(_that.id, _that.email, _that.displayName, _that.xp,
+            _that.level, _that.coins, _that.gems, _that.avatarId);
       case _:
         return null;
     }
@@ -644,7 +674,10 @@ class _AuthUser implements AuthUser {
       required this.email,
       required this.displayName,
       required this.xp,
-      required this.level});
+      required this.level,
+      this.coins = 0,
+      this.gems = 0,
+      this.avatarId});
   factory _AuthUser.fromJson(Map<String, dynamic> json) =>
       _$AuthUserFromJson(json);
 
@@ -658,6 +691,14 @@ class _AuthUser implements AuthUser {
   final int xp;
   @override
   final int level;
+  @override
+  @JsonKey()
+  final int coins;
+  @override
+  @JsonKey()
+  final int gems;
+  @override
+  final String? avatarId;
 
   /// Create a copy of AuthUser
   /// with the given fields replaced by the non-null parameter values.
@@ -684,17 +725,21 @@ class _AuthUser implements AuthUser {
             (identical(other.displayName, displayName) ||
                 other.displayName == displayName) &&
             (identical(other.xp, xp) || other.xp == xp) &&
-            (identical(other.level, level) || other.level == level));
+            (identical(other.level, level) || other.level == level) &&
+            (identical(other.coins, coins) || other.coins == coins) &&
+            (identical(other.gems, gems) || other.gems == gems) &&
+            (identical(other.avatarId, avatarId) ||
+                other.avatarId == avatarId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, email, displayName, xp, level);
+  int get hashCode => Object.hash(
+      runtimeType, id, email, displayName, xp, level, coins, gems, avatarId);
 
   @override
   String toString() {
-    return 'AuthUser(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level)';
+    return 'AuthUser(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level, coins: $coins, gems: $gems, avatarId: $avatarId)';
   }
 }
 
@@ -705,7 +750,15 @@ abstract mixin class _$AuthUserCopyWith<$Res>
       __$AuthUserCopyWithImpl;
   @override
   @useResult
-  $Res call({int id, String email, String displayName, int xp, int level});
+  $Res call(
+      {int id,
+      String email,
+      String displayName,
+      int xp,
+      int level,
+      int coins,
+      int gems,
+      String? avatarId});
 }
 
 /// @nodoc
@@ -725,6 +778,9 @@ class __$AuthUserCopyWithImpl<$Res> implements _$AuthUserCopyWith<$Res> {
     Object? displayName = null,
     Object? xp = null,
     Object? level = null,
+    Object? coins = null,
+    Object? gems = null,
+    Object? avatarId = freezed,
   }) {
     return _then(_AuthUser(
       id: null == id
@@ -747,6 +803,18 @@ class __$AuthUserCopyWithImpl<$Res> implements _$AuthUserCopyWith<$Res> {
           ? _self.level
           : level // ignore: cast_nullable_to_non_nullable
               as int,
+      coins: null == coins
+          ? _self.coins
+          : coins // ignore: cast_nullable_to_non_nullable
+              as int,
+      gems: null == gems
+          ? _self.gems
+          : gems // ignore: cast_nullable_to_non_nullable
+              as int,
+      avatarId: freezed == avatarId
+          ? _self.avatarId
+          : avatarId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }

@@ -20,6 +20,10 @@ mixin _$Quest {
   QuestStatus get status;
   QuestDifficulty get difficulty;
   int get xpReward;
+  int get coinReward;
+  QuestCategory? get category;
+  QuestRecurrence get recurrence;
+  String? get rarity;
   String? get dueDate;
   String? get completedAt;
   String? get createdAt;
@@ -50,6 +54,13 @@ mixin _$Quest {
                 other.difficulty == difficulty) &&
             (identical(other.xpReward, xpReward) ||
                 other.xpReward == xpReward) &&
+            (identical(other.coinReward, coinReward) ||
+                other.coinReward == coinReward) &&
+            (identical(other.category, category) ||
+                other.category == category) &&
+            (identical(other.recurrence, recurrence) ||
+                other.recurrence == recurrence) &&
+            (identical(other.rarity, rarity) || other.rarity == rarity) &&
             (identical(other.dueDate, dueDate) || other.dueDate == dueDate) &&
             (identical(other.completedAt, completedAt) ||
                 other.completedAt == completedAt) &&
@@ -71,6 +82,10 @@ mixin _$Quest {
       status,
       difficulty,
       xpReward,
+      coinReward,
+      category,
+      recurrence,
+      rarity,
       dueDate,
       completedAt,
       createdAt,
@@ -79,7 +94,7 @@ mixin _$Quest {
 
   @override
   String toString() {
-    return 'Quest(id: $id, title: $title, description: $description, status: $status, difficulty: $difficulty, xpReward: $xpReward, dueDate: $dueDate, completedAt: $completedAt, createdAt: $createdAt, calendarEventId: $calendarEventId, levelUpResult: $levelUpResult)';
+    return 'Quest(id: $id, title: $title, description: $description, status: $status, difficulty: $difficulty, xpReward: $xpReward, coinReward: $coinReward, category: $category, recurrence: $recurrence, rarity: $rarity, dueDate: $dueDate, completedAt: $completedAt, createdAt: $createdAt, calendarEventId: $calendarEventId, levelUpResult: $levelUpResult)';
   }
 }
 
@@ -95,6 +110,10 @@ abstract mixin class $QuestCopyWith<$Res> {
       QuestStatus status,
       QuestDifficulty difficulty,
       int xpReward,
+      int coinReward,
+      QuestCategory? category,
+      QuestRecurrence recurrence,
+      String? rarity,
       String? dueDate,
       String? completedAt,
       String? createdAt,
@@ -122,6 +141,10 @@ class _$QuestCopyWithImpl<$Res> implements $QuestCopyWith<$Res> {
     Object? status = null,
     Object? difficulty = null,
     Object? xpReward = null,
+    Object? coinReward = null,
+    Object? category = freezed,
+    Object? recurrence = null,
+    Object? rarity = freezed,
     Object? dueDate = freezed,
     Object? completedAt = freezed,
     Object? createdAt = freezed,
@@ -153,6 +176,22 @@ class _$QuestCopyWithImpl<$Res> implements $QuestCopyWith<$Res> {
           ? _self.xpReward
           : xpReward // ignore: cast_nullable_to_non_nullable
               as int,
+      coinReward: null == coinReward
+          ? _self.coinReward
+          : coinReward // ignore: cast_nullable_to_non_nullable
+              as int,
+      category: freezed == category
+          ? _self.category
+          : category // ignore: cast_nullable_to_non_nullable
+              as QuestCategory?,
+      recurrence: null == recurrence
+          ? _self.recurrence
+          : recurrence // ignore: cast_nullable_to_non_nullable
+              as QuestRecurrence,
+      rarity: freezed == rarity
+          ? _self.rarity
+          : rarity // ignore: cast_nullable_to_non_nullable
+              as String?,
       dueDate: freezed == dueDate
           ? _self.dueDate
           : dueDate // ignore: cast_nullable_to_non_nullable
@@ -291,6 +330,10 @@ extension QuestPatterns on Quest {
             QuestStatus status,
             QuestDifficulty difficulty,
             int xpReward,
+            int coinReward,
+            QuestCategory? category,
+            QuestRecurrence recurrence,
+            String? rarity,
             String? dueDate,
             String? completedAt,
             String? createdAt,
@@ -309,6 +352,10 @@ extension QuestPatterns on Quest {
             _that.status,
             _that.difficulty,
             _that.xpReward,
+            _that.coinReward,
+            _that.category,
+            _that.recurrence,
+            _that.rarity,
             _that.dueDate,
             _that.completedAt,
             _that.createdAt,
@@ -341,6 +388,10 @@ extension QuestPatterns on Quest {
             QuestStatus status,
             QuestDifficulty difficulty,
             int xpReward,
+            int coinReward,
+            QuestCategory? category,
+            QuestRecurrence recurrence,
+            String? rarity,
             String? dueDate,
             String? completedAt,
             String? createdAt,
@@ -358,6 +409,10 @@ extension QuestPatterns on Quest {
             _that.status,
             _that.difficulty,
             _that.xpReward,
+            _that.coinReward,
+            _that.category,
+            _that.recurrence,
+            _that.rarity,
             _that.dueDate,
             _that.completedAt,
             _that.createdAt,
@@ -389,6 +444,10 @@ extension QuestPatterns on Quest {
             QuestStatus status,
             QuestDifficulty difficulty,
             int xpReward,
+            int coinReward,
+            QuestCategory? category,
+            QuestRecurrence recurrence,
+            String? rarity,
             String? dueDate,
             String? completedAt,
             String? createdAt,
@@ -406,6 +465,10 @@ extension QuestPatterns on Quest {
             _that.status,
             _that.difficulty,
             _that.xpReward,
+            _that.coinReward,
+            _that.category,
+            _that.recurrence,
+            _that.rarity,
             _that.dueDate,
             _that.completedAt,
             _that.createdAt,
@@ -427,6 +490,10 @@ class _Quest implements Quest {
       required this.status,
       required this.difficulty,
       required this.xpReward,
+      this.coinReward = 0,
+      this.category,
+      this.recurrence = QuestRecurrence.ONE_TIME,
+      this.rarity,
       this.dueDate,
       this.completedAt,
       this.createdAt,
@@ -446,6 +513,16 @@ class _Quest implements Quest {
   final QuestDifficulty difficulty;
   @override
   final int xpReward;
+  @override
+  @JsonKey()
+  final int coinReward;
+  @override
+  final QuestCategory? category;
+  @override
+  @JsonKey()
+  final QuestRecurrence recurrence;
+  @override
+  final String? rarity;
   @override
   final String? dueDate;
   @override
@@ -486,6 +563,13 @@ class _Quest implements Quest {
                 other.difficulty == difficulty) &&
             (identical(other.xpReward, xpReward) ||
                 other.xpReward == xpReward) &&
+            (identical(other.coinReward, coinReward) ||
+                other.coinReward == coinReward) &&
+            (identical(other.category, category) ||
+                other.category == category) &&
+            (identical(other.recurrence, recurrence) ||
+                other.recurrence == recurrence) &&
+            (identical(other.rarity, rarity) || other.rarity == rarity) &&
             (identical(other.dueDate, dueDate) || other.dueDate == dueDate) &&
             (identical(other.completedAt, completedAt) ||
                 other.completedAt == completedAt) &&
@@ -507,6 +591,10 @@ class _Quest implements Quest {
       status,
       difficulty,
       xpReward,
+      coinReward,
+      category,
+      recurrence,
+      rarity,
       dueDate,
       completedAt,
       createdAt,
@@ -515,7 +603,7 @@ class _Quest implements Quest {
 
   @override
   String toString() {
-    return 'Quest(id: $id, title: $title, description: $description, status: $status, difficulty: $difficulty, xpReward: $xpReward, dueDate: $dueDate, completedAt: $completedAt, createdAt: $createdAt, calendarEventId: $calendarEventId, levelUpResult: $levelUpResult)';
+    return 'Quest(id: $id, title: $title, description: $description, status: $status, difficulty: $difficulty, xpReward: $xpReward, coinReward: $coinReward, category: $category, recurrence: $recurrence, rarity: $rarity, dueDate: $dueDate, completedAt: $completedAt, createdAt: $createdAt, calendarEventId: $calendarEventId, levelUpResult: $levelUpResult)';
   }
 }
 
@@ -532,6 +620,10 @@ abstract mixin class _$QuestCopyWith<$Res> implements $QuestCopyWith<$Res> {
       QuestStatus status,
       QuestDifficulty difficulty,
       int xpReward,
+      int coinReward,
+      QuestCategory? category,
+      QuestRecurrence recurrence,
+      String? rarity,
       String? dueDate,
       String? completedAt,
       String? createdAt,
@@ -560,6 +652,10 @@ class __$QuestCopyWithImpl<$Res> implements _$QuestCopyWith<$Res> {
     Object? status = null,
     Object? difficulty = null,
     Object? xpReward = null,
+    Object? coinReward = null,
+    Object? category = freezed,
+    Object? recurrence = null,
+    Object? rarity = freezed,
     Object? dueDate = freezed,
     Object? completedAt = freezed,
     Object? createdAt = freezed,
@@ -591,6 +687,22 @@ class __$QuestCopyWithImpl<$Res> implements _$QuestCopyWith<$Res> {
           ? _self.xpReward
           : xpReward // ignore: cast_nullable_to_non_nullable
               as int,
+      coinReward: null == coinReward
+          ? _self.coinReward
+          : coinReward // ignore: cast_nullable_to_non_nullable
+              as int,
+      category: freezed == category
+          ? _self.category
+          : category // ignore: cast_nullable_to_non_nullable
+              as QuestCategory?,
+      recurrence: null == recurrence
+          ? _self.recurrence
+          : recurrence // ignore: cast_nullable_to_non_nullable
+              as QuestRecurrence,
+      rarity: freezed == rarity
+          ? _self.rarity
+          : rarity // ignore: cast_nullable_to_non_nullable
+              as String?,
       dueDate: freezed == dueDate
           ? _self.dueDate
           : dueDate // ignore: cast_nullable_to_non_nullable
@@ -636,6 +748,8 @@ mixin _$LevelUpResult {
   bool get leveledUp;
   int get xpGained;
   int get xpToNextLevel;
+  int get coinsEarned;
+  int get gemsEarned;
 
   /// Create a copy of LevelUpResult
   /// with the given fields replaced by the non-null parameter values.
@@ -660,17 +774,21 @@ mixin _$LevelUpResult {
             (identical(other.xpGained, xpGained) ||
                 other.xpGained == xpGained) &&
             (identical(other.xpToNextLevel, xpToNextLevel) ||
-                other.xpToNextLevel == xpToNextLevel));
+                other.xpToNextLevel == xpToNextLevel) &&
+            (identical(other.coinsEarned, coinsEarned) ||
+                other.coinsEarned == coinsEarned) &&
+            (identical(other.gemsEarned, gemsEarned) ||
+                other.gemsEarned == gemsEarned));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, totalXp, level, leveledUp, xpGained, xpToNextLevel);
+  int get hashCode => Object.hash(runtimeType, totalXp, level, leveledUp,
+      xpGained, xpToNextLevel, coinsEarned, gemsEarned);
 
   @override
   String toString() {
-    return 'LevelUpResult(totalXp: $totalXp, level: $level, leveledUp: $leveledUp, xpGained: $xpGained, xpToNextLevel: $xpToNextLevel)';
+    return 'LevelUpResult(totalXp: $totalXp, level: $level, leveledUp: $leveledUp, xpGained: $xpGained, xpToNextLevel: $xpToNextLevel, coinsEarned: $coinsEarned, gemsEarned: $gemsEarned)';
   }
 }
 
@@ -685,7 +803,9 @@ abstract mixin class $LevelUpResultCopyWith<$Res> {
       int level,
       bool leveledUp,
       int xpGained,
-      int xpToNextLevel});
+      int xpToNextLevel,
+      int coinsEarned,
+      int gemsEarned});
 }
 
 /// @nodoc
@@ -706,6 +826,8 @@ class _$LevelUpResultCopyWithImpl<$Res>
     Object? leveledUp = null,
     Object? xpGained = null,
     Object? xpToNextLevel = null,
+    Object? coinsEarned = null,
+    Object? gemsEarned = null,
   }) {
     return _then(_self.copyWith(
       totalXp: null == totalXp
@@ -727,6 +849,14 @@ class _$LevelUpResultCopyWithImpl<$Res>
       xpToNextLevel: null == xpToNextLevel
           ? _self.xpToNextLevel
           : xpToNextLevel // ignore: cast_nullable_to_non_nullable
+              as int,
+      coinsEarned: null == coinsEarned
+          ? _self.coinsEarned
+          : coinsEarned // ignore: cast_nullable_to_non_nullable
+              as int,
+      gemsEarned: null == gemsEarned
+          ? _self.gemsEarned
+          : gemsEarned // ignore: cast_nullable_to_non_nullable
               as int,
     ));
   }
@@ -826,15 +956,21 @@ extension LevelUpResultPatterns on LevelUpResult {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
     TResult Function(int totalXp, int level, bool leveledUp, int xpGained,
-            int xpToNextLevel)?
+            int xpToNextLevel, int coinsEarned, int gemsEarned)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _LevelUpResult() when $default != null:
-        return $default(_that.totalXp, _that.level, _that.leveledUp,
-            _that.xpGained, _that.xpToNextLevel);
+        return $default(
+            _that.totalXp,
+            _that.level,
+            _that.leveledUp,
+            _that.xpGained,
+            _that.xpToNextLevel,
+            _that.coinsEarned,
+            _that.gemsEarned);
       case _:
         return orElse();
     }
@@ -856,14 +992,20 @@ extension LevelUpResultPatterns on LevelUpResult {
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
     TResult Function(int totalXp, int level, bool leveledUp, int xpGained,
-            int xpToNextLevel)
+            int xpToNextLevel, int coinsEarned, int gemsEarned)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _LevelUpResult():
-        return $default(_that.totalXp, _that.level, _that.leveledUp,
-            _that.xpGained, _that.xpToNextLevel);
+        return $default(
+            _that.totalXp,
+            _that.level,
+            _that.leveledUp,
+            _that.xpGained,
+            _that.xpToNextLevel,
+            _that.coinsEarned,
+            _that.gemsEarned);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -884,14 +1026,20 @@ extension LevelUpResultPatterns on LevelUpResult {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
     TResult? Function(int totalXp, int level, bool leveledUp, int xpGained,
-            int xpToNextLevel)?
+            int xpToNextLevel, int coinsEarned, int gemsEarned)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _LevelUpResult() when $default != null:
-        return $default(_that.totalXp, _that.level, _that.leveledUp,
-            _that.xpGained, _that.xpToNextLevel);
+        return $default(
+            _that.totalXp,
+            _that.level,
+            _that.leveledUp,
+            _that.xpGained,
+            _that.xpToNextLevel,
+            _that.coinsEarned,
+            _that.gemsEarned);
       case _:
         return null;
     }
@@ -906,7 +1054,9 @@ class _LevelUpResult implements LevelUpResult {
       required this.level,
       required this.leveledUp,
       required this.xpGained,
-      required this.xpToNextLevel});
+      required this.xpToNextLevel,
+      this.coinsEarned = 0,
+      this.gemsEarned = 0});
   factory _LevelUpResult.fromJson(Map<String, dynamic> json) =>
       _$LevelUpResultFromJson(json);
 
@@ -920,6 +1070,12 @@ class _LevelUpResult implements LevelUpResult {
   final int xpGained;
   @override
   final int xpToNextLevel;
+  @override
+  @JsonKey()
+  final int coinsEarned;
+  @override
+  @JsonKey()
+  final int gemsEarned;
 
   /// Create a copy of LevelUpResult
   /// with the given fields replaced by the non-null parameter values.
@@ -948,17 +1104,21 @@ class _LevelUpResult implements LevelUpResult {
             (identical(other.xpGained, xpGained) ||
                 other.xpGained == xpGained) &&
             (identical(other.xpToNextLevel, xpToNextLevel) ||
-                other.xpToNextLevel == xpToNextLevel));
+                other.xpToNextLevel == xpToNextLevel) &&
+            (identical(other.coinsEarned, coinsEarned) ||
+                other.coinsEarned == coinsEarned) &&
+            (identical(other.gemsEarned, gemsEarned) ||
+                other.gemsEarned == gemsEarned));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, totalXp, level, leveledUp, xpGained, xpToNextLevel);
+  int get hashCode => Object.hash(runtimeType, totalXp, level, leveledUp,
+      xpGained, xpToNextLevel, coinsEarned, gemsEarned);
 
   @override
   String toString() {
-    return 'LevelUpResult(totalXp: $totalXp, level: $level, leveledUp: $leveledUp, xpGained: $xpGained, xpToNextLevel: $xpToNextLevel)';
+    return 'LevelUpResult(totalXp: $totalXp, level: $level, leveledUp: $leveledUp, xpGained: $xpGained, xpToNextLevel: $xpToNextLevel, coinsEarned: $coinsEarned, gemsEarned: $gemsEarned)';
   }
 }
 
@@ -975,7 +1135,9 @@ abstract mixin class _$LevelUpResultCopyWith<$Res>
       int level,
       bool leveledUp,
       int xpGained,
-      int xpToNextLevel});
+      int xpToNextLevel,
+      int coinsEarned,
+      int gemsEarned});
 }
 
 /// @nodoc
@@ -996,6 +1158,8 @@ class __$LevelUpResultCopyWithImpl<$Res>
     Object? leveledUp = null,
     Object? xpGained = null,
     Object? xpToNextLevel = null,
+    Object? coinsEarned = null,
+    Object? gemsEarned = null,
   }) {
     return _then(_LevelUpResult(
       totalXp: null == totalXp
@@ -1017,6 +1181,14 @@ class __$LevelUpResultCopyWithImpl<$Res>
       xpToNextLevel: null == xpToNextLevel
           ? _self.xpToNextLevel
           : xpToNextLevel // ignore: cast_nullable_to_non_nullable
+              as int,
+      coinsEarned: null == coinsEarned
+          ? _self.coinsEarned
+          : coinsEarned // ignore: cast_nullable_to_non_nullable
+              as int,
+      gemsEarned: null == gemsEarned
+          ? _self.gemsEarned
+          : gemsEarned // ignore: cast_nullable_to_non_nullable
               as int,
     ));
   }

@@ -23,6 +23,9 @@ abstract class AuthUser with _$AuthUser {
     required String displayName,
     required int xp,
     required int level,
+    @Default(0) int coins,
+    @Default(0) int gems,
+    String? avatarId,
   }) = _AuthUser;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) =>

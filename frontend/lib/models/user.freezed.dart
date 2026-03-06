@@ -19,6 +19,11 @@ mixin _$User {
   String get displayName;
   int get xp;
   int get level;
+  int get coins;
+  int get gems;
+  String? get avatarId;
+  int get currentStreak;
+  int get bestStreak;
   String? get createdAt;
   bool get notificationsEnabled;
 
@@ -43,6 +48,14 @@ mixin _$User {
                 other.displayName == displayName) &&
             (identical(other.xp, xp) || other.xp == xp) &&
             (identical(other.level, level) || other.level == level) &&
+            (identical(other.coins, coins) || other.coins == coins) &&
+            (identical(other.gems, gems) || other.gems == gems) &&
+            (identical(other.avatarId, avatarId) ||
+                other.avatarId == avatarId) &&
+            (identical(other.currentStreak, currentStreak) ||
+                other.currentStreak == currentStreak) &&
+            (identical(other.bestStreak, bestStreak) ||
+                other.bestStreak == bestStreak) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.notificationsEnabled, notificationsEnabled) ||
@@ -51,12 +64,24 @@ mixin _$User {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, email, displayName, xp,
-      level, createdAt, notificationsEnabled);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      email,
+      displayName,
+      xp,
+      level,
+      coins,
+      gems,
+      avatarId,
+      currentStreak,
+      bestStreak,
+      createdAt,
+      notificationsEnabled);
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level, createdAt: $createdAt, notificationsEnabled: $notificationsEnabled)';
+    return 'User(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level, coins: $coins, gems: $gems, avatarId: $avatarId, currentStreak: $currentStreak, bestStreak: $bestStreak, createdAt: $createdAt, notificationsEnabled: $notificationsEnabled)';
   }
 }
 
@@ -71,6 +96,11 @@ abstract mixin class $UserCopyWith<$Res> {
       String displayName,
       int xp,
       int level,
+      int coins,
+      int gems,
+      String? avatarId,
+      int currentStreak,
+      int bestStreak,
       String? createdAt,
       bool notificationsEnabled});
 }
@@ -92,6 +122,11 @@ class _$UserCopyWithImpl<$Res> implements $UserCopyWith<$Res> {
     Object? displayName = null,
     Object? xp = null,
     Object? level = null,
+    Object? coins = null,
+    Object? gems = null,
+    Object? avatarId = freezed,
+    Object? currentStreak = null,
+    Object? bestStreak = null,
     Object? createdAt = freezed,
     Object? notificationsEnabled = null,
   }) {
@@ -115,6 +150,26 @@ class _$UserCopyWithImpl<$Res> implements $UserCopyWith<$Res> {
       level: null == level
           ? _self.level
           : level // ignore: cast_nullable_to_non_nullable
+              as int,
+      coins: null == coins
+          ? _self.coins
+          : coins // ignore: cast_nullable_to_non_nullable
+              as int,
+      gems: null == gems
+          ? _self.gems
+          : gems // ignore: cast_nullable_to_non_nullable
+              as int,
+      avatarId: freezed == avatarId
+          ? _self.avatarId
+          : avatarId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      currentStreak: null == currentStreak
+          ? _self.currentStreak
+          : currentStreak // ignore: cast_nullable_to_non_nullable
+              as int,
+      bestStreak: null == bestStreak
+          ? _self.bestStreak
+          : bestStreak // ignore: cast_nullable_to_non_nullable
               as int,
       createdAt: freezed == createdAt
           ? _self.createdAt
@@ -221,16 +276,38 @@ extension UserPatterns on User {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(int id, String email, String displayName, int xp,
-            int level, String? createdAt, bool notificationsEnabled)?
+    TResult Function(
+            int id,
+            String email,
+            String displayName,
+            int xp,
+            int level,
+            int coins,
+            int gems,
+            String? avatarId,
+            int currentStreak,
+            int bestStreak,
+            String? createdAt,
+            bool notificationsEnabled)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _User() when $default != null:
-        return $default(_that.id, _that.email, _that.displayName, _that.xp,
-            _that.level, _that.createdAt, _that.notificationsEnabled);
+        return $default(
+            _that.id,
+            _that.email,
+            _that.displayName,
+            _that.xp,
+            _that.level,
+            _that.coins,
+            _that.gems,
+            _that.avatarId,
+            _that.currentStreak,
+            _that.bestStreak,
+            _that.createdAt,
+            _that.notificationsEnabled);
       case _:
         return orElse();
     }
@@ -251,15 +328,37 @@ extension UserPatterns on User {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(int id, String email, String displayName, int xp,
-            int level, String? createdAt, bool notificationsEnabled)
+    TResult Function(
+            int id,
+            String email,
+            String displayName,
+            int xp,
+            int level,
+            int coins,
+            int gems,
+            String? avatarId,
+            int currentStreak,
+            int bestStreak,
+            String? createdAt,
+            bool notificationsEnabled)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _User():
-        return $default(_that.id, _that.email, _that.displayName, _that.xp,
-            _that.level, _that.createdAt, _that.notificationsEnabled);
+        return $default(
+            _that.id,
+            _that.email,
+            _that.displayName,
+            _that.xp,
+            _that.level,
+            _that.coins,
+            _that.gems,
+            _that.avatarId,
+            _that.currentStreak,
+            _that.bestStreak,
+            _that.createdAt,
+            _that.notificationsEnabled);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -279,15 +378,37 @@ extension UserPatterns on User {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(int id, String email, String displayName, int xp,
-            int level, String? createdAt, bool notificationsEnabled)?
+    TResult? Function(
+            int id,
+            String email,
+            String displayName,
+            int xp,
+            int level,
+            int coins,
+            int gems,
+            String? avatarId,
+            int currentStreak,
+            int bestStreak,
+            String? createdAt,
+            bool notificationsEnabled)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _User() when $default != null:
-        return $default(_that.id, _that.email, _that.displayName, _that.xp,
-            _that.level, _that.createdAt, _that.notificationsEnabled);
+        return $default(
+            _that.id,
+            _that.email,
+            _that.displayName,
+            _that.xp,
+            _that.level,
+            _that.coins,
+            _that.gems,
+            _that.avatarId,
+            _that.currentStreak,
+            _that.bestStreak,
+            _that.createdAt,
+            _that.notificationsEnabled);
       case _:
         return null;
     }
@@ -303,6 +424,11 @@ class _User implements User {
       required this.displayName,
       required this.xp,
       required this.level,
+      this.coins = 0,
+      this.gems = 0,
+      this.avatarId,
+      this.currentStreak = 0,
+      this.bestStreak = 0,
       this.createdAt,
       this.notificationsEnabled = true});
   factory _User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
@@ -317,6 +443,20 @@ class _User implements User {
   final int xp;
   @override
   final int level;
+  @override
+  @JsonKey()
+  final int coins;
+  @override
+  @JsonKey()
+  final int gems;
+  @override
+  final String? avatarId;
+  @override
+  @JsonKey()
+  final int currentStreak;
+  @override
+  @JsonKey()
+  final int bestStreak;
   @override
   final String? createdAt;
   @override
@@ -349,6 +489,14 @@ class _User implements User {
                 other.displayName == displayName) &&
             (identical(other.xp, xp) || other.xp == xp) &&
             (identical(other.level, level) || other.level == level) &&
+            (identical(other.coins, coins) || other.coins == coins) &&
+            (identical(other.gems, gems) || other.gems == gems) &&
+            (identical(other.avatarId, avatarId) ||
+                other.avatarId == avatarId) &&
+            (identical(other.currentStreak, currentStreak) ||
+                other.currentStreak == currentStreak) &&
+            (identical(other.bestStreak, bestStreak) ||
+                other.bestStreak == bestStreak) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.notificationsEnabled, notificationsEnabled) ||
@@ -357,12 +505,24 @@ class _User implements User {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, email, displayName, xp,
-      level, createdAt, notificationsEnabled);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      email,
+      displayName,
+      xp,
+      level,
+      coins,
+      gems,
+      avatarId,
+      currentStreak,
+      bestStreak,
+      createdAt,
+      notificationsEnabled);
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level, createdAt: $createdAt, notificationsEnabled: $notificationsEnabled)';
+    return 'User(id: $id, email: $email, displayName: $displayName, xp: $xp, level: $level, coins: $coins, gems: $gems, avatarId: $avatarId, currentStreak: $currentStreak, bestStreak: $bestStreak, createdAt: $createdAt, notificationsEnabled: $notificationsEnabled)';
   }
 }
 
@@ -378,6 +538,11 @@ abstract mixin class _$UserCopyWith<$Res> implements $UserCopyWith<$Res> {
       String displayName,
       int xp,
       int level,
+      int coins,
+      int gems,
+      String? avatarId,
+      int currentStreak,
+      int bestStreak,
       String? createdAt,
       bool notificationsEnabled});
 }
@@ -399,6 +564,11 @@ class __$UserCopyWithImpl<$Res> implements _$UserCopyWith<$Res> {
     Object? displayName = null,
     Object? xp = null,
     Object? level = null,
+    Object? coins = null,
+    Object? gems = null,
+    Object? avatarId = freezed,
+    Object? currentStreak = null,
+    Object? bestStreak = null,
     Object? createdAt = freezed,
     Object? notificationsEnabled = null,
   }) {
@@ -422,6 +592,26 @@ class __$UserCopyWithImpl<$Res> implements _$UserCopyWith<$Res> {
       level: null == level
           ? _self.level
           : level // ignore: cast_nullable_to_non_nullable
+              as int,
+      coins: null == coins
+          ? _self.coins
+          : coins // ignore: cast_nullable_to_non_nullable
+              as int,
+      gems: null == gems
+          ? _self.gems
+          : gems // ignore: cast_nullable_to_non_nullable
+              as int,
+      avatarId: freezed == avatarId
+          ? _self.avatarId
+          : avatarId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      currentStreak: null == currentStreak
+          ? _self.currentStreak
+          : currentStreak // ignore: cast_nullable_to_non_nullable
+              as int,
+      bestStreak: null == bestStreak
+          ? _self.bestStreak
+          : bestStreak // ignore: cast_nullable_to_non_nullable
               as int,
       createdAt: freezed == createdAt
           ? _self.createdAt

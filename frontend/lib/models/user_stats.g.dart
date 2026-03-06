@@ -13,6 +13,10 @@ _UserStats _$UserStatsFromJson(Map<String, dynamic> json) => _UserStats(
       xpForCurrentLevel: (json['xpForCurrentLevel'] as num).toInt(),
       totalQuestsCompleted: (json['totalQuestsCompleted'] as num).toInt(),
       progressPercent: (json['progressPercent'] as num).toDouble(),
+      coins: (json['coins'] as num?)?.toInt() ?? 0,
+      gems: (json['gems'] as num?)?.toInt() ?? 0,
+      currentStreak: (json['currentStreak'] as num?)?.toInt() ?? 0,
+      bestStreak: (json['bestStreak'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$UserStatsToJson(_UserStats instance) =>
@@ -23,4 +27,8 @@ Map<String, dynamic> _$UserStatsToJson(_UserStats instance) =>
       'xpForCurrentLevel': instance.xpForCurrentLevel,
       'totalQuestsCompleted': instance.totalQuestsCompleted,
       'progressPercent': instance.progressPercent,
+      'coins': instance.coins,
+      'gems': instance.gems,
+      'currentStreak': instance.currentStreak,
+      'bestStreak': instance.bestStreak,
     };
