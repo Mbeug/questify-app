@@ -19,11 +19,22 @@ public class QuestDto {
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;
     private String calendarEventId;
+    private QuestCategory category;
+    private QuestRecurrence recurrence;
+    private Integer coinReward;
+    private String rarity;
 
     // Rempli uniquement lors d'une completion de quete
     private LevelUpResult levelUpResult;
 
     public static QuestDto from(Quest quest) {
+        String rarity = switch (quest.getDifficulty()) {
+            case EASY -> "COMMON";
+            case MEDIUM -> "UNCOMMON";
+            case HARD -> "RARE";
+            case EPIC -> "LEGENDARY";
+        };
+
         return QuestDto.builder()
                 .id(quest.getId())
                 .title(quest.getTitle())
@@ -35,6 +46,10 @@ public class QuestDto {
                 .completedAt(quest.getCompletedAt())
                 .createdAt(quest.getCreatedAt())
                 .calendarEventId(quest.getCalendarEventId())
+                .category(quest.getCategory())
+                .recurrence(quest.getRecurrence())
+                .coinReward(quest.getCoinReward())
+                .rarity(rarity)
                 .build();
     }
 }

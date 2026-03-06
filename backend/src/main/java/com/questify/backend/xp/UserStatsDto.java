@@ -12,4 +12,9 @@ public class UserStatsDto {
     private Long xpForCurrentLevel;
     private Long totalQuestsCompleted;
     private double progressPercent;
+    // Currency & streak fields
+    private Long coins;
+    private Long gems;
+    private Integer currentStreak;
+    private Integer bestStreak;
 }

@@ -21,4 +21,7 @@ public class UpdateQuestRequest {
 
     // Google Calendar event ID (sent from mobile client after creating calendar event)
     private String calendarEventId;
+
+    private QuestCategory category;
+    private QuestRecurrence recurrence;
 }

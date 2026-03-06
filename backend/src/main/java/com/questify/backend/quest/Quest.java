@@ -29,8 +29,21 @@ public class Quest {
     @Column(nullable = false, length = 10)
     private QuestDifficulty difficulty;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private QuestCategory category;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private QuestRecurrence recurrence = QuestRecurrence.ONE_TIME;
+
     @Column(nullable = false)
     private Integer xpReward;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer coinReward = 0;
 
     private LocalDateTime dueDate;
 
@@ -57,5 +70,7 @@ public class Quest {
     void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (status == null) status = QuestStatus.PENDING;
+        if (recurrence == null) recurrence = QuestRecurrence.ONE_TIME;
+        if (coinReward == null) coinReward = 0;
     }
 }

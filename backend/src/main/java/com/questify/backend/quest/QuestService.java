@@ -1,5 +1,7 @@
 package com.questify.backend.quest;
 
+import com.questify.backend.achievement.AchievementService;
+import com.questify.backend.group.GroupService;
 import com.questify.backend.notification.NotificationService;
 import com.questify.backend.user.AppUser;
 import com.questify.backend.xp.LevelUpResult;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,6 +23,8 @@ public class QuestService {
     private final QuestRepository questRepository;
     private final XpService xpService;
     private final NotificationService notificationService;
+    private final GroupService groupService;
+    private final AchievementService achievementService;
 
     public List<QuestDto> getQuests(AppUser user) {
         return questRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
@@ -43,12 +48,16 @@ public class QuestService {
     @Transactional
     public QuestDto createQuest(AppUser user, CreateQuestRequest request) {
         int xpReward = xpService.getBaseXp(request.getDifficulty());
+        int coinReward = xpService.getBaseCoins(request.getDifficulty());
 
         Quest quest = Quest.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .difficulty(request.getDifficulty())
                 .xpReward(xpReward)
+                .coinReward(coinReward)
+                .category(request.getCategory())
+                .recurrence(request.getRecurrence() != null ? request.getRecurrence() : QuestRecurrence.ONE_TIME)
                 .dueDate(request.getDueDate())
                 .user(user)
                 .build();
@@ -73,7 +82,11 @@ public class QuestService {
         if (request.getDifficulty() != null && request.getDifficulty() != quest.getDifficulty()) {
             quest.setDifficulty(request.getDifficulty());
             quest.setXpReward(xpService.getBaseXp(request.getDifficulty()));
+            quest.setCoinReward(xpService.getBaseCoins(request.getDifficulty()));
         }
+
+        if (request.getCategory() != null) quest.setCategory(request.getCategory());
+        if (request.getRecurrence() != null) quest.setRecurrence(request.getRecurrence());
 
         quest = questRepository.save(quest);
         return QuestDto.from(quest);
@@ -91,7 +104,31 @@ public class QuestService {
         quest.setCompletedAt(LocalDateTime.now());
         questRepository.save(quest);
 
-        LevelUpResult result = xpService.addXp(user, quest.getXpReward());
+        LevelUpResult result = xpService.addXp(user, quest.getXpReward(), quest.getDifficulty());
+
+        // Update streak
+        LocalDate today = LocalDate.now();
+        LocalDate lastCompleted = user.getLastQuestCompletedDate();
+
+        if (lastCompleted == null || lastCompleted.isBefore(today.minusDays(1))) {
+            // Streak broken or first quest ever
+            user.setCurrentStreak(1);
+        } else if (lastCompleted.isBefore(today)) {
+            // Consecutive day
+            user.setCurrentStreak(user.getCurrentStreak() + 1);
+        }
+        // If lastCompleted equals today, streak already counted for today
+
+        user.setLastQuestCompletedDate(today);
+        if (user.getCurrentStreak() > user.getBestStreak()) {
+            user.setBestStreak(user.getCurrentStreak());
+        }
+
+        // Update group progress
+        groupService.onQuestCompleted(user, quest.getXpReward());
+
+        // Check achievements
+        achievementService.checkQuestAchievements(user);
 
         // Send push notification on level-up
         if (result.leveledUp() && user.getFcmToken() != null

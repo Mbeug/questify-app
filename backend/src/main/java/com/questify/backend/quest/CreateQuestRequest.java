@@ -21,4 +21,7 @@ public class CreateQuestRequest {
     private QuestDifficulty difficulty;
 
     private LocalDateTime dueDate;
+
+    private QuestCategory category;
+    private QuestRecurrence recurrence;
 }

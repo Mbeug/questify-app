@@ -5,5 +5,7 @@ public record LevelUpResult(
     int level,
     boolean leveledUp,
     int xpGained,
-    long xpToNextLevel
+    long xpToNextLevel,
+    int coinsEarned,
+    int gemsEarned
 ) {}
