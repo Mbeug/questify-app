@@ -30,3 +30,8 @@ questify:
     enabled: ${REMINDERS_ENABLED:true}
     # How many hours before dueDate to send a reminder
     hours-before: ${REMINDERS_HOURS_BEFORE:24}
+
+# ── Google OAuth (social login) ──
+# Set this to your Google OAuth Client ID (from Google Cloud Console)
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}

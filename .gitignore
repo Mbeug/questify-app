@@ -80,5 +80,8 @@ google-services.json
 GoogleService-Info.plist
 firebase_app_id_file.json
 
+# --- Windows artifacts ---
+nul
+
 # --- Backend Java ---
 /backend/.gitignore
