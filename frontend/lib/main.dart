@@ -4,10 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'app_router.dart';
 import 'theme.dart';
+import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase est optionnel : si non configuré (pas de google-services.json),
+  // Firebase est optionnel : si non configure (pas de google-services.json),
   // l'app fonctionne quand meme sans notifications push.
   try {
     await Firebase.initializeApp(
@@ -19,17 +20,34 @@ void main() async {
   runApp(const ProviderScope(child: QuestifyApp()));
 }
 
-class QuestifyApp extends StatelessWidget {
+class QuestifyApp extends ConsumerWidget {
   const QuestifyApp({super.key});
 
   static final _router = buildRouter();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeProvider);
+
+    // Derive ThemeMode from our 3-state enum
+    final ThemeMode themeMode;
+    switch (mode) {
+      case QuestifyThemeMode.light:
+        themeMode = ThemeMode.light;
+        break;
+      case QuestifyThemeMode.dark:
+        themeMode = ThemeMode.dark;
+        break;
+      case QuestifyThemeMode.auto:
+        themeMode = ThemeMode.system;
+        break;
+    }
+
     return MaterialApp.router(
       title: 'Questify',
-      theme: appLightTheme,
-      darkTheme: appDarkTheme,
+      theme: questifyLightTheme,
+      darkTheme: questifyDarkTheme,
+      themeMode: themeMode,
       routerConfig: _router,
     );
   }

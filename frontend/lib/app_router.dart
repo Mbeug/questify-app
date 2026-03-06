@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'features/login/login_page.dart';
-import 'features/signup/signup_page.dart';
+
+import 'features/auth/auth_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/profile/profile_page.dart';
+import 'features/quests/quests_tab_page.dart';
 import 'features/quests/quest_list_page.dart';
 import 'features/quests/create_quest_page.dart';
 import 'features/settings/settings_page.dart';
+import 'features/group/group_screen.dart';
+import 'features/customization/customization_screen.dart';
+import 'features/shared/shell_scaffold.dart';
+
+// ============================================================================
+//  Router — 5-tab ShellRoute + auth routes
+// ============================================================================
 
 final GlobalKey<NavigatorState> _rootKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
+
+// ──── Transition helpers ────
 
 CustomTransitionPage<void> _fadeTransition(
   GoRouterState state,
@@ -58,47 +68,101 @@ CustomTransitionPage<void> _slideUpTransition(
   );
 }
 
+// ──── Router builder ────
+
 GoRouter buildRouter() => GoRouter(
       navigatorKey: _rootKey,
       initialLocation: '/login',
       routes: [
-        // Auth pages — simple fade
+        // ── Auth route (single merged page) ──
         GoRoute(
           path: '/login',
           pageBuilder: (_, state) =>
-              _fadeTransition(state, const LoginPage()),
-        ),
-        GoRoute(
-          path: '/signup',
-          pageBuilder: (_, state) =>
-              _fadeTransition(state, const SignupPage()),
+              _fadeTransition(state, const AuthPage()),
         ),
 
-        // Main pages — slide up + fade
-        GoRoute(
-          path: '/dashboard',
-          pageBuilder: (_, state) =>
-              _slideUpTransition(state, const DashboardPage()),
-        ),
-        GoRoute(
-          path: '/profile',
-          pageBuilder: (_, state) =>
-              _slideUpTransition(state, const ProfilePage()),
-        ),
-        GoRoute(
-          path: '/quests',
-          pageBuilder: (_, state) =>
-              _slideUpTransition(state, const QuestListPage()),
-        ),
-        GoRoute(
-          path: '/quests/create',
-          pageBuilder: (_, state) =>
-              _slideUpTransition(state, const CreateQuestPage()),
-        ),
-        GoRoute(
-          path: '/settings',
-          pageBuilder: (_, state) =>
-              _slideUpTransition(state, const SettingsPage()),
+        // ── Main app with persistent 5-tab bottom nav ──
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return ShellScaffold(navigationShell: navigationShell);
+          },
+          branches: [
+            // Tab 0: Accueil (Dashboard — recap only)
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/dashboard',
+                  pageBuilder: (_, state) =>
+                      _slideUpTransition(state, const DashboardPage()),
+                ),
+              ],
+            ),
+
+            // Tab 1: Quetes (quest management)
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/quests',
+                  pageBuilder: (_, state) =>
+                      _slideUpTransition(state, const QuestsTabPage()),
+                  routes: [
+                    // Nested: quest list (full detail view)
+                    GoRoute(
+                      path: 'list',
+                      pageBuilder: (_, state) =>
+                          _slideUpTransition(state, const QuestListPage()),
+                    ),
+                    // Nested: create quest
+                    GoRoute(
+                      path: 'create',
+                      pageBuilder: (_, state) =>
+                          _slideUpTransition(state, const CreateQuestPage()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            // Tab 2: Groupe
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/group',
+                  pageBuilder: (_, state) =>
+                      _slideUpTransition(state, const GroupScreen()),
+                ),
+              ],
+            ),
+
+            // Tab 3: Themes (Customization)
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/customization',
+                  pageBuilder: (_, state) =>
+                      _slideUpTransition(state, const CustomizationScreen()),
+                ),
+              ],
+            ),
+
+            // Tab 4: Profil
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  pageBuilder: (_, state) =>
+                      _slideUpTransition(state, const ProfilePage()),
+                  routes: [
+                    GoRoute(
+                      path: 'settings',
+                      pageBuilder: (_, state) =>
+                          _slideUpTransition(state, const SettingsPage()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );
