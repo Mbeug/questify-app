@@ -55,6 +55,8 @@ class QuestsNotifier extends StateNotifier<QuestsState> {
     String? description,
     required QuestDifficulty difficulty,
     String? dueDate,
+    QuestCategory? category,
+    QuestRecurrence? recurrence,
   }) async {
     try {
       final quest = await _api.createQuest(
@@ -62,6 +64,8 @@ class QuestsNotifier extends StateNotifier<QuestsState> {
         description: description,
         difficulty: difficulty,
         dueDate: dueDate,
+        category: category,
+        recurrence: recurrence,
       );
       state = state.copyWith(quests: [quest, ...state.quests]);
       return quest;

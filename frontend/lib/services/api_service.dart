@@ -4,7 +4,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/achievement.dart';
+import '../models/app_theme.dart';
 import '../models/auth_response.dart';
+import '../models/group.dart';
 import '../models/quest.dart';
 import '../models/user.dart';
 import '../models/user_stats.dart';
@@ -61,6 +64,22 @@ class ApiService {
     return AuthResponse.fromJson(resp);
   }
 
+  Future<AuthResponse> socialLogin({
+    String? idToken,
+    String? accessToken,
+    required String provider,
+    String? displayName,
+  }) async {
+    final body = <String, dynamic>{
+      'provider': provider,
+    };
+    if (idToken != null) body['idToken'] = idToken;
+    if (accessToken != null) body['accessToken'] = accessToken;
+    if (displayName != null) body['displayName'] = displayName;
+    final resp = await _post('/api/auth/social', body);
+    return AuthResponse.fromJson(resp);
+  }
+
   // ── User ──────────────────────────────────────────
 
   Future<User> getMe() async {
@@ -73,8 +92,11 @@ class ApiService {
     return UserStats.fromJson(resp);
   }
 
-  Future<User> updateProfile(String displayName) async {
-    final resp = await _patch('/api/users/me', {'displayName': displayName});
+  Future<User> updateProfile({String? displayName, String? avatarId}) async {
+    final body = <String, dynamic>{};
+    if (displayName != null) body['displayName'] = displayName;
+    if (avatarId != null) body['avatarId'] = avatarId;
+    final resp = await _patch('/api/users/me', body);
     return User.fromJson(resp);
   }
 
@@ -96,6 +118,8 @@ class ApiService {
     String? description,
     required QuestDifficulty difficulty,
     String? dueDate,
+    QuestCategory? category,
+    QuestRecurrence? recurrence,
   }) async {
     final body = <String, dynamic>{
       'title': title,
@@ -103,6 +127,8 @@ class ApiService {
     };
     if (description != null) body['description'] = description;
     if (dueDate != null) body['dueDate'] = dueDate;
+    if (category != null) body['category'] = category.name;
+    if (recurrence != null) body['recurrence'] = recurrence.name;
 
     final resp = await _post('/api/quests', body);
     return Quest.fromJson(resp);
@@ -120,6 +146,69 @@ class ApiService {
 
   Future<void> deleteQuest(int id) async {
     await _delete('/api/quests/$id');
+  }
+
+  // ── Groups ──────────────────────────────────────────
+
+  Future<List<QuestGroup>> getMyGroups() async {
+    final resp = await _getList('/api/groups');
+    return resp.map((g) => QuestGroup.fromJson(g as Map<String, dynamic>)).toList();
+  }
+
+  Future<QuestGroup> getGroup(int id) async {
+    final resp = await _get('/api/groups/$id');
+    return QuestGroup.fromJson(resp);
+  }
+
+  Future<QuestGroup> createGroup({
+    required String name,
+    String? description,
+    String? bannerEmoji,
+    int? weeklyGoal,
+  }) async {
+    final body = <String, dynamic>{'name': name};
+    if (description != null) body['description'] = description;
+    if (bannerEmoji != null) body['bannerEmoji'] = bannerEmoji;
+    if (weeklyGoal != null) body['weeklyGoal'] = weeklyGoal;
+    final resp = await _post('/api/groups', body);
+    return QuestGroup.fromJson(resp);
+  }
+
+  Future<QuestGroup> joinGroup(String inviteCode) async {
+    final resp = await _post('/api/groups/join', {'inviteCode': inviteCode});
+    return QuestGroup.fromJson(resp);
+  }
+
+  Future<void> leaveGroup(int groupId) async {
+    await _post('/api/groups/$groupId/leave', {});
+  }
+
+  Future<void> removeMember(int groupId, int userId) async {
+    await _delete('/api/groups/$groupId/members/$userId');
+  }
+
+  // ── Themes ──────────────────────────────────────────
+
+  Future<List<AppThemeModel>> getThemes() async {
+    final resp = await _getList('/api/themes');
+    return resp.map((t) => AppThemeModel.fromJson(t as Map<String, dynamic>)).toList();
+  }
+
+  Future<AppThemeModel> buyTheme(int themeId) async {
+    final resp = await _post('/api/themes/$themeId/buy', {});
+    return AppThemeModel.fromJson(resp);
+  }
+
+  Future<AppThemeModel> applyTheme(int themeId) async {
+    final resp = await _post('/api/themes/$themeId/apply', {});
+    return AppThemeModel.fromJson(resp);
+  }
+
+  // ── Achievements ────────────────────────────────────
+
+  Future<List<Achievement>> getAchievements() async {
+    final resp = await _getList('/api/achievements');
+    return resp.map((a) => Achievement.fromJson(a as Map<String, dynamic>)).toList();
   }
 
   // ── Hello (test) ──────────────────────────────────
