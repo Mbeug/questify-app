@@ -2,9 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../providers/achievement_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/stats_provider.dart';
 import '../../services/api_service.dart';
+import '../../theme.dart';
+import 'widgets/achievements_section.dart';
+import 'widgets/hero_header.dart';
+import 'widgets/profile_customization_section.dart';
+import 'widgets/profile_helpers.dart';
+import 'widgets/profile_settings_section.dart';
+import 'widgets/quick_stats.dart';
+import 'widgets/skills_radar.dart';
+import 'widgets/xp_progress_card.dart';
+
+// ═══════════════════════════════════════════════════════════════════
+//  ProfilePage
+// ═══════════════════════════════════════════════════════════════════
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -15,10 +29,6 @@ class ProfilePage extends ConsumerStatefulWidget {
 
 class _ProfilePageState extends ConsumerState<ProfilePage>
     with SingleTickerProviderStateMixin {
-  bool _isEditing = false;
-  final _nameCtrl = TextEditingController();
-  bool _isSaving = false;
-
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
 
@@ -31,67 +41,187 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _animCtrl.forward();
+
+    // Load data
+    Future.microtask(() {
+      ref.read(statsProvider.notifier).loadStats();
+      ref.read(achievementProvider.notifier).loadAchievements();
+    });
   }
 
   @override
   void dispose() {
     _animCtrl.dispose();
-    _nameCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _saveDisplayName() async {
-    final newName = _nameCtrl.text.trim();
-    if (newName.isEmpty) return;
+  // ─── Edit profile dialog ──────────────────────────────────────
+  Future<void> _showEditDialog() async {
+    final auth = ref.read(authProvider);
+    final user = auth.user;
+    if (user == null) return;
 
-    setState(() => _isSaving = true);
-    try {
-      final api = ref.read(apiServiceProvider);
-      await api.updateProfile(newName);
-      await ref.read(authProvider.notifier).refreshUser();
-      if (mounted) {
-        setState(() {
-          _isEditing = false;
-          _isSaving = false;
+    String selectedAvatarId = user.avatarId ?? avatars[0].id;
+    final nameCtrl = TextEditingController(text: user.displayName);
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setDialogState) {
+          final q = ctx.q;
+          return AlertDialog(
+            backgroundColor: q.bgSecondary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: q.accentPurple),
+            ),
+            title: Text('Modifier le profil',
+                style: TextStyle(color: q.textPrimary)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Personnalise ton heros',
+                    style: TextStyle(color: q.textMuted, fontSize: 13)),
+                const SizedBox(height: 20),
+                // Avatar picker
+                Text('Avatar',
+                    style: TextStyle(
+                        color: q.textPrimary, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: avatars.map((av) {
+                    final isSelected = selectedAvatarId == av.id;
+                    return GestureDetector(
+                      onTap: () =>
+                          setDialogState(() => selectedAvatarId = av.id),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: av.color,
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: av.color.withAlpha(120),
+                                    blurRadius: 12,
+                                  )
+                                ]
+                              : [],
+                        ),
+                        child: Center(
+                          child: Text(av.emoji,
+                              style: TextStyle(
+                                  fontSize: isSelected ? 22 : 18)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Nom'),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Annuler', style: TextStyle(color: q.textMuted)),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: [q.accentPurple, q.accentGold]),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                  ),
+                  onPressed: () => Navigator.pop(ctx, {
+                    'name': nameCtrl.text.trim(),
+                    'avatarId': selectedAvatarId,
+                  }),
+                  child:
+                      const Text('Enregistrer', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          );
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nom mis a jour'),
-            behavior: SnackBarBehavior.floating,
-          ),
+      },
+    );
+
+    nameCtrl.dispose();
+
+    if (result != null && mounted) {
+      try {
+        final api = ref.read(apiServiceProvider);
+        final newName = result['name']!;
+        final newAvatar = result['avatarId']!;
+        await api.updateProfile(
+          displayName: newName.isNotEmpty ? newName : null,
+          avatarId: newAvatar,
         );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        await ref.read(authProvider.notifier).refreshUser();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil mis a jour'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur: $e'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
   }
 
+  // ─── Logout ───────────────────────────────────────────────────
   Future<void> _logout() async {
+    final q = context.q;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: Icon(Icons.logout,
-            size: 36, color: Theme.of(context).colorScheme.error),
-        title: const Text('Se deconnecter ?'),
-        content: const Text('Tu devras te reconnecter ensuite.'),
+        backgroundColor: q.bgSecondary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: q.borderDefault),
+        ),
+        icon: Icon(Icons.logout, size: 36, color: q.accentRed),
+        title:
+            Text('Se deconnecter ?', style: TextStyle(color: q.textPrimary)),
+        content: Text('Tu devras te reconnecter ensuite.',
+            style: TextStyle(color: q.textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
+            child: Text('Annuler', style: TextStyle(color: q.textMuted)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: q.accentRed),
             child: const Text('Deconnexion'),
           ),
         ],
@@ -104,340 +234,161 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     }
   }
 
+  // ─── Delete account ───────────────────────────────────────────
+  Future<void> _showDeleteDialog() async {
+    final q = context.q;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: q.bgSecondary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: q.accentRed),
+        ),
+        title: Text('Supprimer ton compte ?',
+            style: TextStyle(color: q.textPrimary)),
+        content: Text(
+          'Cette action est irreversible. Toute ta progression sera perdue.',
+          style: TextStyle(color: q.textMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: q.textMuted)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: q.accentRed),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      // TODO: call delete account API when backend supports it
+      await ref.read(authProvider.notifier).logout();
+      if (mounted) context.go('/login');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  BUILD
+  // ═══════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     final statsAsync = ref.watch(statsProvider);
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final achievementsAsync = ref.watch(achievementProvider);
+    final q = context.q;
     final user = auth.user;
 
+    if (auth.isLoading) {
+      return Scaffold(
+        backgroundColor: q.bgPrimary,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: q.bgPrimary,
+        body: Center(
+          child: Text('Non connecte', style: TextStyle(color: q.textMuted)),
+        ),
+      );
+    }
+
+    final avatar = avatarById(user.avatarId);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profil'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Se deconnecter',
-            onPressed: _logout,
-          ),
-        ],
-      ),
-      body: auth.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : user == null
-              ? const Center(child: Text('Non connecte'))
-              : FadeTransition(
-                  opacity: _fadeAnim,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        // Avatar with gradient ring
-                        Container(
-                          width: 108,
-                          height: 108,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                cs.primary,
-                                cs.tertiary,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: cs.primary.withAlpha(50),
-                                blurRadius: 24,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor: cs.surface,
-                              child: Text(
-                                user.displayName.isNotEmpty
-                                    ? user.displayName[0].toUpperCase()
-                                    : '?',
-                                style:
-                                    theme.textTheme.headlineLarge?.copyWith(
-                                  color: cs.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+      backgroundColor: q.bgPrimary,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 100),
+          child: Column(
+            children: [
+              // ── Header hero ─────────────────────────────────
+              HeroHeader(
+                user: user,
+                avatar: avatar,
+                q: q,
+                onEdit: _showEditDialog,
+              ),
 
-                        // Display name (editable)
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: _isEditing
-                              ? _buildEditName()
-                              : _buildDisplayName(user.displayName),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(user.email,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                                color: cs.onSurfaceVariant)),
-                        const SizedBox(height: 32),
-
-                        // Stats section
-                        statsAsync.when(
-                          loading: () =>
-                              const CircularProgressIndicator(),
-                          error: (e, _) => Text('Erreur: $e'),
-                          data: (stats) => Column(
-                            children: [
-                              // Level card with gradient
-                              Card(
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.circular(16),
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        cs.primaryContainer,
-                                        cs.primaryContainer
-                                            .withAlpha(180),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          width: 56,
-                                          height: 56,
-                                          decoration: BoxDecoration(
-                                            color: cs
-                                                .onPrimaryContainer
-                                                .withAlpha(20),
-                                            borderRadius:
-                                                BorderRadius.circular(
-                                                    14),
-                                          ),
-                                          child: Icon(Icons.shield,
-                                              size: 28,
-                                              color: cs
-                                                  .onPrimaryContainer),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text('Niveau ${stats.level}',
-                                            style: theme.textTheme
-                                                .headlineSmall
-                                                ?.copyWith(
-                                                    color: cs
-                                                        .onPrimaryContainer,
-                                                    fontWeight:
-                                                        FontWeight
-                                                            .bold)),
-                                        const SizedBox(height: 16),
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child:
-                                              LinearProgressIndicator(
-                                            value:
-                                                stats.progressPercent /
-                                                    100.0,
-                                            minHeight: 10,
-                                            backgroundColor: cs
-                                                .onPrimaryContainer
-                                                .withAlpha(25),
-                                            valueColor:
-                                                AlwaysStoppedAnimation<
-                                                    Color>(cs
-                                                        .onPrimaryContainer),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          '${stats.xp} XP total — ${stats.xpToNextLevel} XP avant le prochain niveau',
-                                          style: theme
-                                              .textTheme.bodySmall
-                                              ?.copyWith(
-                                                  color: cs
-                                                      .onPrimaryContainer
-                                                      .withAlpha(
-                                                          180)),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Stats details
-                              Card(
-                                child: Column(
-                                  children: [
-                                    _ProfileRow(
-                                      icon: Icons.check_circle,
-                                      label: 'Quetes terminees',
-                                      value:
-                                          '${stats.totalQuestsCompleted}',
-                                      color: cs.tertiary,
-                                    ),
-                                    Divider(
-                                        height: 1,
-                                        color: cs.outlineVariant
-                                            .withAlpha(80)),
-                                    _ProfileRow(
-                                      icon: Icons.bolt,
-                                      label: 'XP total',
-                                      value: '${stats.xp}',
-                                      color: const Color(0xFFF59E0B),
-                                    ),
-                                    Divider(
-                                        height: 1,
-                                        color: cs.outlineVariant
-                                            .withAlpha(80)),
-                                    _ProfileRow(
-                                      icon: Icons.trending_up,
-                                      label: 'Niveau actuel',
-                                      value: '${stats.level}',
-                                      color: cs.primary,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        // Logout button
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: _logout,
-                            icon: const Icon(Icons.logout),
-                            label: const Text('Se deconnecter'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: cs.error,
-                              side: BorderSide(color: cs.error),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              // ── Quick stats ─────────────────────────────────
+              statsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
                 ),
-    );
-  }
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text('Erreur: $e',
+                      style: TextStyle(color: q.accentRed)),
+                ),
+                data: (stats) => Column(
+                  children: [
+                    QuickStats(stats: stats, q: q),
+                    XpProgressCard(stats: stats, q: q),
+                    SkillsRadar(
+                      stats: stats,
+                      q: q,
+                      currentStreak: user.currentStreak,
+                      bestStreak: user.bestStreak,
+                    ),
+                  ],
+                ),
+              ),
 
-  Widget _buildDisplayName(String name) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+              // ── Achievements ────────────────────────────────
+              AchievementsSection(
+                achievementsAsync: achievementsAsync,
+                q: q,
+              ),
 
-    return GestureDetector(
-      key: const ValueKey('display'),
-      onTap: () {
-        _nameCtrl.text = name;
-        setState(() => _isEditing = true);
-      },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(name, style: theme.textTheme.headlineSmall),
-          const SizedBox(width: 8),
-          Icon(Icons.edit, size: 18, color: cs.onSurfaceVariant),
-        ],
-      ),
-    );
-  }
+              // ── Customization links ─────────────────────────
+              ProfileCustomizationSection(q: q),
 
-  Widget _buildEditName() {
-    return Row(
-      key: const ValueKey('edit'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 200,
-          child: TextField(
-            controller: _nameCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Nouveau nom',
-              isDense: true,
-            ),
-            textAlign: TextAlign.center,
-            autofocus: true,
+              // ── Settings ────────────────────────────────────
+              ProfileSettingsSection(q: q),
+
+              // ── Account actions ─────────────────────────────
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Se deconnecter'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: q.textMuted,
+                          side: BorderSide(color: q.borderDefault, width: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _showDeleteDialog,
+                      child: Text(
+                        'Supprimer mon compte',
+                        style: TextStyle(
+                            color: q.accentRed, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: _isSaving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.check),
-          onPressed: _isSaving ? null : _saveDisplayName,
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => setState(() => _isEditing = false),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfileRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _ProfileRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withAlpha(25),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
-          Text(label, style: theme.textTheme.bodyMedium),
-          const Spacer(),
-          Text(value,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-        ],
       ),
     );
   }

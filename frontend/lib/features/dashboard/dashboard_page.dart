@@ -6,6 +6,7 @@ import '../../models/quest.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/quests_provider.dart';
 import '../../providers/stats_provider.dart';
+import '../../theme.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -15,8 +16,6 @@ class DashboardPage extends ConsumerStatefulWidget {
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-  int _currentIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -29,8 +28,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
+    final q = context.q;
 
-    // Rediriger si pas auth
     if (!auth.isAuthenticated && !auth.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go('/login');
@@ -38,98 +37,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Questify'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Parametres',
-            onPressed: () => context.go('/settings'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            tooltip: 'Profil',
-            onPressed: () => context.go('/profile'),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: [
-            _DashboardHome(),
-            const SizedBox.shrink(),
-          ],
-        ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (i) {
-          if (i == 1) {
-            context.go('/quests');
-          } else {
-            setState(() => _currentIndex = i);
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Quetes',
-          ),
-        ],
-      ),
+      backgroundColor: q.bgPrimary,
+      body: SafeArea(child: _DashboardBody()),
     );
   }
 }
 
-class _DashboardHome extends ConsumerStatefulWidget {
+class _DashboardBody extends ConsumerWidget {
   @override
-  ConsumerState<_DashboardHome> createState() => _DashboardHomeState();
-}
-
-class _DashboardHomeState extends ConsumerState<_DashboardHome>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _staggerCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _staggerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _staggerCtrl.forward();
-  }
-
-  @override
-  void dispose() {
-    _staggerCtrl.dispose();
-    super.dispose();
-  }
-
-  /// Creates a staggered animation for each child element
-  Animation<double> _stagger(int index, int total) {
-    final begin = index / total;
-    final end = (index + 1) / total;
-    return CurvedAnimation(
-      parent: _staggerCtrl,
-      curve: Interval(begin, end, curve: Curves.easeOutCubic),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final statsAsync = ref.watch(statsProvider);
     final questsState = ref.watch(questsProvider);
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final q = context.q;
+
+    final activeQuests = questsState.quests
+        .where((quest) => quest.status != QuestStatus.COMPLETED)
+        .toList();
+    final completedToday = questsState.quests
+        .where((quest) => quest.status == QuestStatus.COMPLETED)
+        .toList();
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -140,555 +67,566 @@ class _DashboardHomeState extends ConsumerState<_DashboardHome>
         ]);
       },
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         children: [
-          // Greeting — stagger 0
-          FadeTransition(
-            opacity: _stagger(0, 5),
-            child: SlideTransition(
-              position: _stagger(0, 5).drive(
-                Tween(begin: const Offset(0, 0.1), end: Offset.zero),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          // Header with gradient background
+          _buildHeader(context, auth, statsAsync, q),
+
+          // Streak card
+          statsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (stats) => _buildStreakCard(context, stats, q),
+          ),
+
+          // Quick stats summary
+          statsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (stats) => _buildQuickStats(stats, q),
+          ),
+
+          // Quest summary section (compact, not full list)
+          _buildQuestSummary(context, activeQuests, completedToday, q),
+
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+      BuildContext context, AuthState auth, AsyncValue statsAsync, QuestifyColors q) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [q.bgSecondary, q.bgPrimary],
+        ),
+      ),
+      child: Column(
+        children: [
+          // Avatar row
+          Row(
+            children: [
+              // Avatar
+              Stack(
                 children: [
-                  Text(
-                    'Salut, ${auth.user?.displayName ?? 'Aventurier'} !',
-                    style: theme.textTheme.headlineMedium,
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: q.accentPurple,
+                    child: Text(
+                      (auth.user?.displayName ?? 'A')[0].toUpperCase(),
+                      style: TextStyle(
+                          color: q.textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Pret pour de nouvelles quetes ?',
-                    style: theme.textTheme.bodyLarge
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: q.accentGold,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: q.bgPrimary, width: 3),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${auth.user?.level ?? 1}',
+                          style: TextStyle(
+                              color: q.bgPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // XP / Level card — stagger 1
-          FadeTransition(
-            opacity: _stagger(1, 5),
-            child: SlideTransition(
-              position: _stagger(1, 5).drive(
-                Tween(begin: const Offset(0, 0.1), end: Offset.zero),
-              ),
-              child: statsAsync.when(
-                loading: () => const _ShimmerCard(height: 120),
-                error: (e, _) => _ErrorCard(
-                  message: 'Impossible de charger les stats',
-                  onRetry: () =>
-                      ref.read(statsProvider.notifier).loadStats(),
-                ),
-                data: (stats) => _AnimatedXpCard(stats: stats),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Stats row — stagger 2
-          FadeTransition(
-            opacity: _stagger(2, 5),
-            child: SlideTransition(
-              position: _stagger(2, 5).drive(
-                Tween(begin: const Offset(0, 0.1), end: Offset.zero),
-              ),
-              child: statsAsync.when(
-                loading: () => Row(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Expanded(child: _ShimmerCard(height: 90)),
-                    const SizedBox(width: 12),
-                    const Expanded(child: _ShimmerCard(height: 90)),
-                    const SizedBox(width: 12),
-                    const Expanded(child: _ShimmerCard(height: 90)),
-                  ],
-                ),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (stats) => Row(
-                  children: [
-                    Expanded(
-                      child: _StatTile(
-                        icon: Icons.check_circle,
-                        label: 'Terminees',
-                        value: '${stats.totalQuestsCompleted}',
-                        color: cs.tertiary,
-                      ),
+                    Text(
+                      'Salut, ${auth.user?.displayName ?? "Aventurier"}! \u{1F44B}',
+                      style: TextStyle(
+                          color: q.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatTile(
-                        icon: Icons.pending_actions,
-                        label: 'En cours',
-                        value:
-                            '${questsState.quests.where((q) => q.status != QuestStatus.COMPLETED).length}',
-                        color: const Color(0xFFF59E0B),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatTile(
-                        icon: Icons.bolt,
-                        label: 'Total XP',
-                        value: '${stats.xp}',
-                        color: cs.primary,
-                      ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_getLevelTitle(auth.user?.level ?? 1)} \u00B7 Niveau ${auth.user?.level ?? 1}',
+                      style: TextStyle(color: q.textMuted, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-            ),
+              // Coins display
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: q.accentGold.withAlpha(40),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: q.accentGold, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('\u{1FA99}', style: TextStyle(fontSize: 14)),
+                        const SizedBox(width: 4),
+                        Text('${auth.user?.coins ?? 0}',
+                            style: TextStyle(
+                                color: q.accentGold,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: () => context.go('/customization'),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: q.bgTertiary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.shopping_bag_outlined,
+                          color: q.textMuted, size: 20),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-
-          // Recent quests header — stagger 3
-          FadeTransition(
-            opacity: _stagger(3, 5),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Quetes recentes',
-                    style: theme.textTheme.titleMedium),
-                TextButton(
-                  onPressed: () => context.go('/quests'),
-                  child: const Text('Voir tout'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Recent quests list — stagger 4
-          FadeTransition(
-            opacity: _stagger(4, 5),
-            child: _buildQuestsList(questsState, theme, cs),
+          const SizedBox(height: 20),
+          // XP bar
+          statsAsync.when(
+            loading: () => const SizedBox(height: 50),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (stats) => _buildXpBar(stats, q),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuestsList(
-      QuestsState questsState, ThemeData theme, ColorScheme cs) {
-    if (questsState.isLoading) {
-      return Column(
-        children: List.generate(
-            3,
-            (_) => const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: _ShimmerCard(height: 64),
-                )),
-      );
-    }
-
-    if (questsState.error != null) {
-      return _ErrorCard(
-        message: questsState.error!,
-        onRetry: () =>
-            ref.read(questsProvider.notifier).loadQuests(),
-      );
-    }
-
-    if (questsState.quests.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(Icons.explore_outlined,
-                    size: 32, color: cs.onPrimaryContainer),
-              ),
-              const SizedBox(height: 16),
-              Text('Aucune quete',
-                  style: theme.textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(
-                'Lance-toi dans ta premiere aventure !',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: () => context.go('/quests/create'),
-                child: const Text('Creer une quete'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+  Widget _buildXpBar(dynamic stats, QuestifyColors q) {
+    final progress = (stats.progressPercent as num).toDouble() / 100.0;
 
     return Column(
-      children: questsState.quests.take(5).map((q) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: q.status == QuestStatus.COMPLETED
-                    ? cs.tertiary.withAlpha(30)
-                    : cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                q.status == QuestStatus.COMPLETED
-                    ? Icons.check_circle
-                    : Icons.radio_button_unchecked,
-                color: q.status == QuestStatus.COMPLETED
-                    ? cs.tertiary
-                    : cs.onSurfaceVariant,
-                size: 22,
-              ),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.bolt, color: q.accentGold, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  'Progression vers Niveau ${stats.level + 1}',
+                  style: TextStyle(color: q.textPrimary, fontSize: 13),
+                ),
+              ],
             ),
-            title: Text(
-              q.title,
-              style: q.status == QuestStatus.COMPLETED
-                  ? TextStyle(
-                      decoration: TextDecoration.lineThrough,
-                      color: cs.onSurface.withAlpha(128))
-                  : null,
+            Text(
+              '${stats.xp} / ${stats.xp + stats.xpToNextLevel} XP',
+              style: TextStyle(color: q.textMuted, fontSize: 11),
             ),
-            subtitle: Text('+${q.xpReward} XP',
-                style: TextStyle(
-                    color: cs.primary, fontWeight: FontWeight.w500)),
-            trailing: _difficultyBadge(q.difficulty, cs),
-            onTap: () => context.go('/quests'),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 12,
+            child: Stack(
+              children: [
+                Container(color: q.bgTertiary),
+                FractionallySizedBox(
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [q.accentPurple, q.accentGold],
+                      ),
+                      boxShadow: [
+                        BoxShadow(color: q.glowPurple, blurRadius: 10)
+                      ],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      }).toList(),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.trending_up, color: q.accentMint, size: 12),
+                const SizedBox(width: 4),
+                Text(
+                  '${stats.totalQuestsCompleted} quetes completees',
+                  style: TextStyle(color: q.accentMint, fontSize: 11),
+                ),
+              ],
+            ),
+            Text(
+              '${stats.progressPercent.toStringAsFixed(0)}%',
+              style: TextStyle(color: q.textMuted, fontSize: 11),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  Widget _difficultyBadge(QuestDifficulty d, ColorScheme cs) {
-    Color color;
-    String label;
-    switch (d) {
-      case QuestDifficulty.EASY:
-        color = Colors.green;
-        label = 'F';
-        break;
-      case QuestDifficulty.MEDIUM:
-        color = Colors.orange;
-        label = 'M';
-        break;
-      case QuestDifficulty.HARD:
-        color = Colors.redAccent;
-        label = 'D';
-        break;
-      case QuestDifficulty.EPIC:
-        color = Colors.deepPurple;
-        label = 'E';
-        break;
-    }
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withAlpha(100)),
-      ),
-      child: Center(
-        child: Text(label,
-            style: TextStyle(
-                color: color, fontWeight: FontWeight.bold, fontSize: 12)),
-      ),
-    );
-  }
-}
+  Widget _buildStreakCard(
+      BuildContext context, dynamic stats, QuestifyColors q) {
+    if (stats.currentStreak <= 0) return const SizedBox.shrink();
 
-// ──────────────── Animated XP Card ────────────────
-
-class _AnimatedXpCard extends StatefulWidget {
-  final dynamic stats;
-  const _AnimatedXpCard({required this.stats});
-
-  @override
-  State<_AnimatedXpCard> createState() => _AnimatedXpCardState();
-}
-
-class _AnimatedXpCardState extends State<_AnimatedXpCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _xpCtrl;
-  late Animation<double> _xpAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _xpCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    _xpAnim = Tween<double>(
-      begin: 0.0,
-      end: (widget.stats.progressPercent as num).toDouble() / 100.0,
-    ).animate(CurvedAnimation(parent: _xpCtrl, curve: Curves.easeOutCubic));
-    _xpCtrl.forward();
-  }
-
-  @override
-  void didUpdateWidget(_AnimatedXpCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.stats.progressPercent != widget.stats.progressPercent) {
-      _xpAnim = Tween<double>(
-        begin: _xpAnim.value,
-        end: (widget.stats.progressPercent as num).toDouble() / 100.0,
-      ).animate(
-          CurvedAnimation(parent: _xpCtrl, curve: Curves.easeOutCubic));
-      _xpCtrl
-        ..reset()
-        ..forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _xpCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Card(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Container(
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
             colors: [
-              cs.primaryContainer,
-              cs.primaryContainer.withAlpha(180),
+              q.accentPurple.withAlpha(30),
+              q.accentGold.withAlpha(30)
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
+          border:
+              Border.all(color: q.accentPurple.withAlpha(60), width: 2),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: q.accentGold,
+                shape: BoxShape.circle,
+              ),
+              child:
+                  Icon(Icons.auto_awesome, color: q.bgPrimary, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: cs.onPrimaryContainer.withAlpha(20),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.shield,
-                        color: cs.onPrimaryContainer, size: 24),
+                  Text(
+                    'Serie de ${stats.currentStreak} jours! \u{1F525}',
+                    style: TextStyle(
+                        color: q.textPrimary,
+                        fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Niveau ${widget.stats.level}',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: cs.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${widget.stats.xp} XP total',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onPrimaryContainer.withAlpha(180),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Continue comme ca!',
+                    style: TextStyle(color: q.textMuted, fontSize: 12),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              // Animated XP progress bar
-              AnimatedBuilder(
-                animation: _xpAnim,
-                builder: (_, __) => ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: _xpAnim.value,
-                    minHeight: 12,
-                    backgroundColor: cs.onPrimaryContainer.withAlpha(25),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                        cs.onPrimaryContainer),
-                  ),
-                ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: q.accentMint,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 8),
+              child: const Text(
+                '+50 XP',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStats(dynamic stats, QuestifyColors q) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _StatCard(
+              icon: Icons.check_circle_outline,
+              label: 'Completees',
+              value: '${stats.totalQuestsCompleted}',
+              color: q.accentMint,
+              q: q,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _StatCard(
+              icon: Icons.bolt,
+              label: 'XP total',
+              value: '${stats.xp}',
+              color: q.accentGold,
+              q: q,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _StatCard(
+              icon: Icons.local_fire_department,
+              label: 'Meilleure serie',
+              value: '${stats.bestStreak}j',
+              color: q.accentPurple,
+              q: q,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestSummary(BuildContext context, List<Quest> activeQuests,
+      List<Quest> completedToday, QuestifyColors q) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section title with link to quests tab
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Text(
-                '${widget.stats.xpToNextLevel} XP avant le niveau ${widget.stats.level + 1} '
-                '(${widget.stats.progressPercent.toStringAsFixed(0)}%)',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onPrimaryContainer.withAlpha(160),
+                'Apercu des quetes',
+                style: TextStyle(
+                    color: q.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
+              ),
+              GestureDetector(
+                onTap: () => context.go('/quests'),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: q.accentPurple.withAlpha(25),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: q.accentPurple.withAlpha(60)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Voir tout',
+                        style: TextStyle(
+                            color: q.accentPurple,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios,
+                          color: q.accentPurple, size: 12),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+
+          // Active quests count
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: q.bgSecondary,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: q.borderDefault),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: q.accentPurple.withAlpha(30),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.assignment, color: q.accentPurple, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${activeQuests.length} ${activeQuests.length <= 1 ? "quete active" : "quetes actives"}',
+                        style: TextStyle(
+                            color: q.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        activeQuests.isEmpty
+                            ? 'Cree une quete pour commencer!'
+                            : 'Prochaine: ${activeQuests.first.title}',
+                        style: TextStyle(color: q.textMuted, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => context.go('/quests/create'),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [q.accentPurple, const Color(0xFF7B3FD9)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(color: q.glowPurple, blurRadius: 8)
+                      ],
+                    ),
+                    child:
+                        const Icon(Icons.add, color: Colors.white, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Completed today summary
+          if (completedToday.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: q.bgSecondary,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: q.borderDefault),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF06D6A0).withAlpha(30),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.check_circle,
+                        color: Color(0xFF06D6A0), size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${completedToday.length} ${completedToday.length <= 1 ? "quete completee" : "quetes completees"} aujourd\'hui',
+                          style: TextStyle(
+                              color: q.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Derniere: ${completedToday.last.title}',
+                          style: TextStyle(color: q.textMuted, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
+
+  String _getLevelTitle(int level) {
+    if (level < 5) return 'Novice';
+    if (level < 10) return 'Apprenti';
+    if (level < 15) return 'Artisan';
+    if (level < 20) return 'Expert';
+    return 'Maitre';
+  }
 }
 
-// ──────────────── Stat tile ────────────────
-
-class _StatTile extends StatelessWidget {
+class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
   final Color color;
+  final QuestifyColors q;
 
-  const _StatTile({
+  const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
+    required this.q,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        child: Column(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withAlpha(25),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: q.bgSecondary,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: q.borderDefault),
       ),
-    );
-  }
-}
-
-// ──────────────── Shimmer / skeleton loading card ────────────────
-
-class _ShimmerCard extends StatefulWidget {
-  final double height;
-  const _ShimmerCard({required this.height});
-
-  @override
-  State<_ShimmerCard> createState() => _ShimmerCardState();
-}
-
-class _ShimmerCardState extends State<_ShimmerCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _shimmerCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _shimmerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _shimmerCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return AnimatedBuilder(
-      animation: _shimmerCtrl,
-      builder: (_, __) {
-        return Card(
-          child: Container(
-            height: widget.height,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                begin: Alignment(-1.0 + 2.0 * _shimmerCtrl.value, 0),
-                end: Alignment(1.0 + 2.0 * _shimmerCtrl.value, 0),
-                colors: [
-                  cs.surfaceContainerHighest.withAlpha(60),
-                  cs.surfaceContainerHighest.withAlpha(120),
-                  cs.surfaceContainerHighest.withAlpha(60),
-                ],
-              ),
-            ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+                color: q.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold),
           ),
-        );
-      },
-    );
-  }
-}
-
-// ──────────────── Error card ────────────────
-
-class _ErrorCard extends StatelessWidget {
-  final String message;
-  final VoidCallback? onRetry;
-
-  const _ErrorCard({required this.message, this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-
-    return Card(
-      color: cs.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline, color: cs.onErrorContainer),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(message,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: cs.onErrorContainer)),
-            ),
-            if (onRetry != null)
-              TextButton(
-                onPressed: onRetry,
-                child: Text('Reessayer',
-                    style: TextStyle(color: cs.onErrorContainer)),
-              ),
-          ],
-        ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(color: q.textMuted, fontSize: 11),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

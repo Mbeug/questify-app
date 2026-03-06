@@ -6,6 +6,7 @@ import '../../models/quest.dart';
 import '../../providers/quests_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/stats_provider.dart';
+import '../shared/xp_notification.dart';
 import 'quest_card.dart';
 
 class QuestListPage extends ConsumerStatefulWidget {
@@ -42,84 +43,20 @@ class _QuestListPageState extends ConsumerState<QuestListPage>
     final result =
         await ref.read(questsProvider.notifier).completeQuest(quest.id);
     if (result != null && result.levelUpResult != null && mounted) {
-      final lu = result.levelUpResult!;
-      if (lu.leveledUp) {
-        _showLevelUpDialog(lu.level, lu.xpGained);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.bolt, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('Quete terminee ! +${lu.xpGained} XP'),
-              ],
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      final r = result.levelUpResult!;
+      showXpNotification(
+        context,
+        XpRewardData(
+          xp: r.xpGained,
+          coins: r.coinsEarned,
+          gems: r.gemsEarned,
+          leveledUp: r.leveledUp,
+          newLevel: r.leveledUp ? r.level : null,
+        ),
+      );
       ref.read(statsProvider.notifier).loadStats();
       ref.read(authProvider.notifier).refreshUser();
     }
-  }
-
-  void _showLevelUpDialog(int newLevel, int xpGained) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Level up dismiss',
-      pageBuilder: (ctx, anim, secondAnim) {
-        return ScaleTransition(
-          scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
-          child: AlertDialog(
-            icon: Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.tertiary,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(Icons.celebration, size: 36, color: Colors.white),
-            ),
-            title: const Text('Niveau superieur !'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Niveau $newLevel',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '+$xpGained XP gagnes',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-            actions: [
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Genial !'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-      transitionDuration: const Duration(milliseconds: 500),
-    );
   }
 
   Future<void> _onDelete(Quest quest) async {
@@ -169,7 +106,7 @@ class _QuestListPageState extends ConsumerState<QuestListPage>
         title: const Text('Mes Quetes'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () => context.go('/quests'),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

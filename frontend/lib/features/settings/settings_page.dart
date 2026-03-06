@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -60,6 +61,71 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // ── Apparence Section ──
+            _SectionHeader(
+              icon: Icons.palette_outlined,
+              title: 'Apparence',
+              color: cs.tertiary,
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mode d\'affichage',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Choisis entre le mode clair, sombre ou automatique (suit le systeme).',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 12),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final mode = ref.watch(themeProvider);
+                        return SegmentedButton<QuestifyThemeMode>(
+                          segments: const [
+                            ButtonSegment(
+                              value: QuestifyThemeMode.auto,
+                              label: Text('Auto'),
+                              icon: Icon(Icons.brightness_auto, size: 18),
+                            ),
+                            ButtonSegment(
+                              value: QuestifyThemeMode.light,
+                              label: Text('Clair'),
+                              icon: Icon(Icons.light_mode, size: 18),
+                            ),
+                            ButtonSegment(
+                              value: QuestifyThemeMode.dark,
+                              label: Text('Sombre'),
+                              icon: Icon(Icons.dark_mode, size: 18),
+                            ),
+                          ],
+                          selected: {mode},
+                          onSelectionChanged: (selected) {
+                            ref
+                                .read(themeProvider.notifier)
+                                .setMode(selected.first);
+                          },
+                          showSelectedIcon: false,
+                          style: ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // ── Google Calendar Section ──
             _SectionHeader(
               icon: Icons.calendar_month,

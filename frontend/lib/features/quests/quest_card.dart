@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/quest.dart';
+import '../../theme.dart';
 
-class QuestCard extends ConsumerWidget {
+class QuestCard extends StatelessWidget {
   final Quest quest;
   final VoidCallback? onComplete;
   final VoidCallback? onDelete;
@@ -17,177 +17,293 @@ class QuestCard extends ConsumerWidget {
     this.onTap,
   });
 
-  Color _difficultyColor(QuestDifficulty d, ColorScheme cs) {
-    switch (d) {
-      case QuestDifficulty.EASY:
-        return Colors.green;
-      case QuestDifficulty.MEDIUM:
-        return Colors.orange;
-      case QuestDifficulty.HARD:
-        return Colors.redAccent;
-      case QuestDifficulty.EPIC:
-        return Colors.deepPurple;
-    }
+  @override
+  Widget build(BuildContext context) {
+    final q = context.q;
+    final rarity = _getRarity(quest.difficulty);
+    final config = _rarityConfig(rarity);
+    final isCompleted = quest.status == QuestStatus.COMPLETED;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: q.bgSecondary,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: config.color.withAlpha(isCompleted ? 60 : 180), width: 2),
+          boxShadow: isCompleted
+              ? []
+              : [BoxShadow(color: config.color.withAlpha(60), blurRadius: 15, spreadRadius: 0)],
+        ),
+        child: Stack(
+          children: [
+            // Shimmer overlay
+            if (!isCompleted)
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: _ShimmerEffect(color: config.color),
+                ),
+              ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Opacity(
+                opacity: isCompleted ? 0.5 : 1.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top row: badges + icon + checkbox
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              _Badge(
+                                text: '${config.icon} ${config.label}',
+                                color: config.color,
+                              ),
+                              _Badge(
+                                text: '+${quest.xpReward} XP',
+                                color: q.accentGold,
+                              ),
+                              if (quest.coinReward > 0)
+                                _Badge(
+                                  text: '+${quest.coinReward} \u{1FA99}',
+                                  color: q.accentGold,
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(config.iconData, color: config.color, size: 22),
+                        const SizedBox(width: 8),
+                        _CompletionCheckbox(
+                          isCompleted: isCompleted,
+                          color: config.color,
+                          onComplete: onComplete,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Title
+                    Text(
+                      quest.title,
+                      style: TextStyle(
+                        color: q.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        decoration: isCompleted ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    // Category + recurrence
+                    if (quest.category != null || quest.recurrence != QuestRecurrence.ONE_TIME) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (quest.category != null)
+                            Text(
+                              _categoryLabel(quest.category!),
+                              style: TextStyle(color: q.textMuted, fontSize: 12),
+                            ),
+                          if (quest.category != null && quest.recurrence != QuestRecurrence.ONE_TIME)
+                            Text(' \u00B7 ', style: TextStyle(color: q.textMuted, fontSize: 12)),
+                          if (quest.recurrence != QuestRecurrence.ONE_TIME)
+                            Text(
+                              _recurrenceLabel(quest.recurrence),
+                              style: TextStyle(color: q.accentCyan, fontSize: 12),
+                            ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    // Difficulty badge at bottom
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: q.borderDefault),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _difficultyLabel(quest.difficulty),
+                            style: TextStyle(color: q.textMuted, fontSize: 11),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (onDelete != null)
+                          GestureDetector(
+                            onTap: onDelete,
+                            child: Icon(Icons.delete_outline, size: 18, color: q.accentRed.withAlpha(150)),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  String _difficultyLabel(QuestDifficulty d) {
-    switch (d) {
-      case QuestDifficulty.EASY:
-        return 'Facile';
-      case QuestDifficulty.MEDIUM:
-        return 'Moyen';
-      case QuestDifficulty.HARD:
-        return 'Difficile';
-      case QuestDifficulty.EPIC:
-        return 'Epique';
-    }
+  static String _getRarity(QuestDifficulty d) {
+    return switch (d) {
+      QuestDifficulty.EASY => 'common',
+      QuestDifficulty.MEDIUM => 'rare',
+      QuestDifficulty.HARD => 'epic',
+      QuestDifficulty.EPIC => 'legendary',
+    };
   }
 
-  String _statusLabel(QuestStatus s) {
-    switch (s) {
-      case QuestStatus.PENDING:
-        return 'En attente';
-      case QuestStatus.IN_PROGRESS:
-        return 'En cours';
-      case QuestStatus.COMPLETED:
-        return 'Terminee';
-    }
+  static _RarityConfig _rarityConfig(String rarity) {
+    return switch (rarity) {
+      'common' => _RarityConfig(Color(0xFF06D6A0), '\u{1F7E2}', 'Commune', Icons.star_outline),
+      'rare' => _RarityConfig(Color(0xFFFFD166), '\u{1F7E1}', 'Rare', Icons.local_fire_department),
+      'epic' => _RarityConfig(Color(0xFFA75EFF), '\u{1F7E3}', 'Epique', Icons.bolt),
+      'legendary' => _RarityConfig(Color(0xFFFF6B6B), '\u{1F534}', 'Legendaire', Icons.workspace_premium),
+      _ => _RarityConfig(Color(0xFF06D6A0), '\u{1F7E2}', 'Commune', Icons.star_outline),
+    };
   }
 
-  IconData _statusIcon(QuestStatus s) {
-    switch (s) {
-      case QuestStatus.PENDING:
-        return Icons.hourglass_empty;
-      case QuestStatus.IN_PROGRESS:
-        return Icons.play_circle_outline;
-      case QuestStatus.COMPLETED:
-        return Icons.check_circle;
-    }
+  static String _difficultyLabel(QuestDifficulty d) {
+    return switch (d) {
+      QuestDifficulty.EASY => 'Facile',
+      QuestDifficulty.MEDIUM => 'Moyen',
+      QuestDifficulty.HARD => 'Difficile',
+      QuestDifficulty.EPIC => 'Epique',
+    };
+  }
+
+  static String _categoryLabel(QuestCategory c) {
+    return switch (c) {
+      QuestCategory.HOME => '\u{1F3E0} Maison',
+      QuestCategory.SPORT => '\u{1F4AA} Sport',
+      QuestCategory.PERSONAL => '\u2728 Personnel',
+      QuestCategory.WORK => '\u{1F4CB} Travail',
+    };
+  }
+
+  static String _recurrenceLabel(QuestRecurrence r) {
+    return switch (r) {
+      QuestRecurrence.ONE_TIME => 'Unique',
+      QuestRecurrence.DAILY => '\u{1F4C5} Quotidienne',
+      QuestRecurrence.WEEKLY => '\u{1F4C6} Hebdomadaire',
+    };
+  }
+}
+
+class _RarityConfig {
+  final Color color;
+  final String icon;
+  final String label;
+  final IconData iconData;
+  const _RarityConfig(this.color, this.icon, this.label, this.iconData);
+}
+
+class _Badge extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _Badge({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(40),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _CompletionCheckbox extends StatelessWidget {
+  final bool isCompleted;
+  final Color color;
+  final VoidCallback? onComplete;
+  const _CompletionCheckbox({required this.isCompleted, required this.color, this.onComplete});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isCompleted ? null : onComplete,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: isCompleted ? const Color(0xFF06D6A0) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isCompleted ? const Color(0xFF06D6A0) : color,
+            width: 2,
+          ),
+        ),
+        child: isCompleted
+            ? const Icon(Icons.check, color: Colors.white, size: 18)
+            : null,
+      ),
+    );
+  }
+}
+
+class _ShimmerEffect extends StatefulWidget {
+  final Color color;
+  const _ShimmerEffect({required this.color});
+
+  @override
+  State<_ShimmerEffect> createState() => _ShimmerEffectState();
+}
+
+class _ShimmerEffectState extends State<_ShimmerEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isCompleted = quest.status == QuestStatus.COMPLETED;
-    final diffColor = _difficultyColor(quest.difficulty, cs);
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title row
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      quest.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        decoration:
-                            isCompleted ? TextDecoration.lineThrough : null,
-                        color: isCompleted
-                            ? cs.onSurface.withAlpha(128)
-                            : null,
-                      ),
-                    ),
-                  ),
-                  // XP badge
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: cs.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '+${quest.xpReward} XP',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: cs.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              if (quest.description != null &&
-                  quest.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  quest.description!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, __) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment(-1.0 + 2.0 * _controller.value, 0),
+              end: Alignment(1.0 + 2.0 * _controller.value, 0),
+              colors: [
+                Colors.transparent,
+                widget.color.withAlpha(25),
+                Colors.transparent,
               ],
-
-              const SizedBox(height: 12),
-
-              // Bottom row: difficulty + status + actions
-              Row(
-                children: [
-                  // Difficulty chip
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: diffColor.withAlpha(30),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: diffColor.withAlpha(100)),
-                    ),
-                    child: Text(
-                      _difficultyLabel(quest.difficulty),
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: diffColor),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Status
-                  Icon(_statusIcon(quest.status),
-                      size: 16,
-                      color: isCompleted ? Colors.green : cs.onSurfaceVariant),
-                  const SizedBox(width: 4),
-                  Text(
-                    _statusLabel(quest.status),
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-
-                  const Spacer(),
-
-                  // Actions
-                  if (!isCompleted && onComplete != null)
-                    IconButton(
-                      icon: const Icon(Icons.check_circle_outline),
-                      tooltip: 'Completer',
-                      onPressed: onComplete,
-                      iconSize: 22,
-                      visualDensity: VisualDensity.compact,
-                      color: Colors.green,
-                    ),
-                  if (onDelete != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Supprimer',
-                      onPressed: onDelete,
-                      iconSize: 22,
-                      visualDensity: VisualDensity.compact,
-                      color: cs.error,
-                    ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
