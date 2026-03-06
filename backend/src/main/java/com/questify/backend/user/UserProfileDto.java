@@ -15,4 +15,9 @@ public class UserProfileDto {
     private Integer level;
     private LocalDateTime createdAt;
     private Boolean notificationsEnabled;
+    private Long coins;
+    private Long gems;
+    private String avatarId;
+    private Integer currentStreak;
+    private Integer bestStreak;
 }

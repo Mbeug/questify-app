@@ -26,6 +26,11 @@ public class UserController {
                 .level(user.getLevel())
                 .createdAt(user.getCreatedAt())
                 .notificationsEnabled(user.getNotificationsEnabled())
+                .coins(user.getCoins())
+                .gems(user.getGems())
+                .avatarId(user.getAvatarId())
+                .currentStreak(user.getCurrentStreak())
+                .bestStreak(user.getBestStreak())
                 .build();
     }
 
@@ -45,6 +50,10 @@ public class UserController {
                 .xpForCurrentLevel(xpNeededForLevel)
                 .totalQuestsCompleted(completedCount)
                 .progressPercent(Math.min(progress, 100))
+                .coins(user.getCoins())
+                .gems(user.getGems())
+                .currentStreak(user.getCurrentStreak())
+                .bestStreak(user.getBestStreak())
                 .build();
     }
 
@@ -60,6 +69,9 @@ public class UserController {
         if (request.getNotificationsEnabled() != null) {
             user.setNotificationsEnabled(request.getNotificationsEnabled());
         }
+        if (request.getAvatarId() != null) {
+            user.setAvatarId(request.getAvatarId());
+        }
         // Pas besoin de repo.save ici car user est managed par JPA dans la transaction
         return UserProfileDto.builder()
                 .id(user.getId())
@@ -69,6 +81,11 @@ public class UserController {
                 .level(user.getLevel())
                 .createdAt(user.getCreatedAt())
                 .notificationsEnabled(user.getNotificationsEnabled())
+                .coins(user.getCoins())
+                .gems(user.getGems())
+                .avatarId(user.getAvatarId())
+                .currentStreak(user.getCurrentStreak())
+                .bestStreak(user.getBestStreak())
                 .build();
     }
 }
