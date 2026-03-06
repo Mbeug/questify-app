@@ -1,5 +1,8 @@
 package com.questify.backend.quest;
 
+import com.questify.backend.achievement.AchievementService;
+import com.questify.backend.group.GroupService;
+import com.questify.backend.notification.NotificationService;
 import com.questify.backend.user.AppUser;
 import com.questify.backend.xp.LevelUpResult;
 import com.questify.backend.xp.XpService;
@@ -19,6 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +33,15 @@ class QuestServiceTest {
 
     @Mock
     private XpService xpService;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
+    private GroupService groupService;
+
+    @Mock
+    private AchievementService achievementService;
 
     @InjectMocks
     private QuestService questService;
@@ -94,14 +107,14 @@ class QuestServiceTest {
         when(questRepository.findById(10L)).thenReturn(Optional.of(quest));
         when(questRepository.save(any(Quest.class))).thenReturn(quest);
 
-        LevelUpResult levelUpResult = new LevelUpResult(50L, 1, false, 50, 50L);
-        when(xpService.addXp(user, 50)).thenReturn(levelUpResult);
+        LevelUpResult levelUpResult = new LevelUpResult(50L, 1, false, 50, 50L, 20, 0);
+        when(xpService.addXp(eq(user), eq(50), eq(QuestDifficulty.MEDIUM))).thenReturn(levelUpResult);
 
         QuestDto result = questService.completeQuest(user, 10L);
 
         assertThat(result.getLevelUpResult()).isNotNull();
         assertThat(result.getLevelUpResult().xpGained()).isEqualTo(50);
-        verify(xpService).addXp(user, 50);
+        verify(xpService).addXp(eq(user), eq(50), eq(QuestDifficulty.MEDIUM));
     }
 
     @Test

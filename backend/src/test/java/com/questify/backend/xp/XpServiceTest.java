@@ -1,6 +1,7 @@
 package com.questify.backend.xp;
 
 import com.questify.backend.quest.QuestDifficulty;
+import com.questify.backend.quest.QuestDifficulty;
 import com.questify.backend.user.AppUser;
 import com.questify.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,12 +74,14 @@ class XpServiceTest {
     void addXp_noLevelUp() {
         when(userRepository.save(any(AppUser.class))).thenReturn(user);
 
-        LevelUpResult result = xpService.addXp(user, 50);
+        LevelUpResult result = xpService.addXp(user, 50, QuestDifficulty.MEDIUM);
 
         assertThat(result.totalXp()).isEqualTo(50L);
         assertThat(result.level()).isEqualTo(1);
         assertThat(result.leveledUp()).isFalse();
         assertThat(result.xpGained()).isEqualTo(50);
+        assertThat(result.coinsEarned()).isEqualTo(20);
+        assertThat(result.gemsEarned()).isEqualTo(0);
         verify(userRepository).save(user);
     }
 
@@ -88,7 +91,7 @@ class XpServiceTest {
         when(userRepository.save(any(AppUser.class))).thenReturn(user);
 
         // Level 2 requires totalXpForLevel(2) = 100 XP
-        LevelUpResult result = xpService.addXp(user, 100);
+        LevelUpResult result = xpService.addXp(user, 100, QuestDifficulty.MEDIUM);
 
         assertThat(result.level()).isEqualTo(2);
         assertThat(result.leveledUp()).isTrue();
@@ -102,7 +105,7 @@ class XpServiceTest {
 
         // Donner assez d'XP pour passer niveaux 2 et 3
         long xpForLevel3 = xpService.totalXpForLevel(3);
-        LevelUpResult result = xpService.addXp(user, (int) xpForLevel3);
+        LevelUpResult result = xpService.addXp(user, (int) xpForLevel3, QuestDifficulty.HARD);
 
         assertThat(result.level()).isGreaterThanOrEqualTo(3);
         assertThat(result.leveledUp()).isTrue();
