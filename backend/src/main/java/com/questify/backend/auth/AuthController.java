@@ -27,4 +27,9 @@ public class AuthController {
     public AuthResponse refresh(@Valid @RequestBody RefreshRequest request) {
         return authService.refresh(request);
     }
+
+    @PostMapping("/social")
+    public AuthResponse socialLogin(@Valid @RequestBody SocialLoginRequest request) {
+        return authService.socialLogin(request);
+    }
 }

@@ -17,5 +17,8 @@ public class AuthResponse {
         private String displayName;
         private Long xp;
         private Integer level;
+        private Long coins;
+        private Long gems;
+        private String avatarId;
     }
 }
